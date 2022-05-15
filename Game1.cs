@@ -56,7 +56,7 @@ namespace AxMC_Realms_ME
                 " Press Z to activate picker mode.\n" +
                 " Press X for bucket mode.\n" +
                 " Press C to full fill map with choosed block.\n" +
-                " Press F to activate rectangle filling mode.\n Press S to activate line filling mode.\n" +
+                " Press F to activate rectangle filling mode.\n Press S to activate line filling mode.\n Press D to delete ( press again to draw ).\n" +
                 " TAB to show grid.\n" +
                 " Enter to save map.\n" +
                 " Space to load map.\n Have fun!");
@@ -240,12 +240,12 @@ namespace AxMC_Realms_ME
                 MState = Mouse.GetState();
                 TMPos.X = (int)(MState.X * _blockSize);
                 TMPos.Y = (int)(MState.Y * _blockSize);
-                if(ScrollVal < MState.ScrollWheelValue && choosedBlock - 1 > -1)
+                if (ScrollVal < MState.ScrollWheelValue && choosedBlock > 0)
                 {
                     choosedBlock--;
                     Tile.nextTileSrcPos = 16 * (choosedBlock % 6);
                 }
-                else if(ScrollVal > MState.ScrollWheelValue )
+                else if (ScrollVal > MState.ScrollWheelValue)
                 {
                     choosedBlock++;
                     Tile.nextTileSrcPos = 16 * (choosedBlock % 6);
@@ -272,20 +272,27 @@ namespace AxMC_Realms_ME
                                 Tile.nextTileSrcPos = 16 * (choosedBlock % 6);
                                 Console.WriteLine(choosedBlock);
                                 Mouse.SetCursor(MouseCursor.Arrow);
+                                Mode = Modes.None;
                                 break;
                             case Modes.Bucket:
                                 Fill(TMPos.X, (int)(MState.Y * _blockSize));
                                 Mouse.SetCursor(MouseCursor.Arrow);
+                                Mode = Modes.None;
                                 break;
                             case Modes.RectangleFill:
                                 RectangleFill(RectFill.X, RectFill.Y, RectFill.Width, RectFill.Height);
                                 IsMouseVisible = true;
+                                Mode = Modes.None;
                                 break;
                             case Modes.LineFill:
                                 LineFill(RectFill.X, RectFill.Y, RectFill.Width, RectFill.Height);
+                                Mode = Modes.None;
+                                break;
+                            case Modes.Delete:
+                                byteMap[index] = byte.MaxValue;
+                                MapTiles[index] = null;
                                 break;
                         }
-                        Mode = Modes.None;
                     }
                     /*if (Mode == 0 && index < MapTiles.Length && index > -1 && byteMap[index] != (byte)choosedBlock)
                     {
@@ -327,7 +334,7 @@ namespace AxMC_Realms_ME
                         choosedBlock = a < 6 ? a : 0;
                         Tile.nextTileSrcPos = 16 * (choosedBlock % 6);
                     }
-                    else if (a >=6 ){ Console.WriteLine("Welding... choose value from 1 to 6!"); }
+                    else if (a >= 6) { Console.WriteLine("Welding... choose value from 1 to 6!"); }
                     break;
             }
             if (!ShowGrid && (e.Key == Keys.Tab))
@@ -366,12 +373,18 @@ namespace AxMC_Realms_ME
                 RectFill.Y = TMPos.Y;
                 Console.WriteLine("Youre in line filling mode");
             }
-            if (e.Key == Keys.D && Mode != Modes.Delete)
+            if (e.Key == Keys.D)
             {
-                Mode = Modes.Delete;
-                RectFill.X = TMPos.X;
-                RectFill.Y = TMPos.Y;
-                Console.WriteLine("Youre in deleting mode");
+                if (Mode != Modes.Delete)
+                {
+                    Mode = Modes.Delete;
+                    Console.WriteLine("Youre in deleting mode");
+                }
+                else
+                {
+                    Mode = Modes.None;
+                    Console.WriteLine("Youre in normal mode");
+                }
             }
 
 
@@ -387,7 +400,7 @@ namespace AxMC_Realms_ME
                 {
                     int index = x + y * MapWidth;
                     if (index > MapTiles.Length || MapTiles[index] is null) continue;
-                    _spriteBatch.Draw(TileSet, new Vector2(x,y) * blockSize, MapTiles[index].SrcRect, Color.White, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                    _spriteBatch.Draw(TileSet, new Vector2(x, y) * blockSize, MapTiles[index].SrcRect, Color.White, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
                 }
             for (int x = 0; x < GraphicsDevice.Viewport.Width; x += blockSize)
             {
@@ -413,12 +426,8 @@ namespace AxMC_Realms_ME
                     _spriteBatch.Draw(GridPixel, new Rectangle(x, 0, 1, GraphicsDevice.Viewport.Height), Color.White);
                 }
             }
-            if (gridblockfound && Mode == Modes.None)
-            {
-                _spriteBatch.Draw(GridTile, choosedBlockPos, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
-                gridblockfound = false;
-            }
-            else if (Mode == Modes.RectangleFill)
+
+            if (Mode == Modes.RectangleFill)
             {
                 int EndX = RectFill.Width,
                     EndY = RectFill.Height,
@@ -450,6 +459,19 @@ namespace AxMC_Realms_ME
 
                 _spriteBatch.Draw(GridTile, RectFill.Location.ToVector2() * blockSize, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
                 _spriteBatch.Draw(GridTile, new Vector2(RectFill.Width, RectFill.Height) * blockSize, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+            }
+            else if (gridblockfound)
+            {
+                if (Mode == Modes.None)
+                {
+                    _spriteBatch.Draw(GridTile, choosedBlockPos, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                    gridblockfound = false;
+                }
+                else if (Mode == Modes.Delete)
+                {
+                    _spriteBatch.Draw(GridTile, choosedBlockPos, null, Color.Red, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                    gridblockfound = false;
+                }
             }
             _spriteBatch.Draw(TileSet, new Vector2(Window.ClientBounds.Width - TileSet.Width - 10, 90), Color.White);
             _spriteBatch.Draw(GridTile, new Rectangle(Window.ClientBounds.Width - TileSet.Width - 11 + choosedBlock * 16, 89, 18, 18), Color.Yellow);
