@@ -1,7 +1,7 @@
 ﻿namespace AxMC_Realms_ME
 {
-    public enum Modes // Mode: zxc dead inside 
+    public enum Modes // Mode: zxc ghoul dead inside 1000-7
     {
-        None, Picker, Bucket, RectangleFill, LineFill, Delete
+        None, Picker, Bucket, RectangleFill, LineFill
     }
 }

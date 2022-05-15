@@ -9,26 +9,28 @@ namespace AxMC_Realms_ME
 {
     public class Game1 : Game
     {
-        private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
         public static Tile[] MapTiles;
-        int choosedBlock = 0;
         public static Vector2[] MapBlocks;
         public static int MapWidth = 256;
+        public static byte[] byteMap;
+
+        private GraphicsDeviceManager _graphics;
+        private SpriteBatch _spriteBatch;
         private int blockSize = 25;
         private float _blockSize;
-        public static byte[] byteMap;
+
         byte[] Entities;
         bool ShowGrid;
+        bool DeleteMode;
+        int ScrollVal;
+        int choosedBlock = 0;
         Modes Mode = 0;
+
         Vector2 choosedBlockPos = -Vector2.One;
         Rectangle RectFill;
-        int ScrollVal;
         MouseState MState;
-        /// <summary>
-        /// Tiled mouse pos
-        /// </summary>
-        Point TMPos;
+        Point TMPos; // Tiled mouse Pos
+
         Texture2D GridTile, GridPixel;
         Texture2D TileSet, EntsSet;
         Texture2D Picker, Bucket;
@@ -141,18 +143,35 @@ namespace AxMC_Realms_ME
                 startY = EndY;
                 EndY = Startyy;
             }
-            for (int x = startX; x <= EndX; x++)
-                for (int y = startY; y <= EndY; y++)
-                {
-                    int index = x + y * MapWidth;
-                    if (index >= byteMap.Length || index < 0)
+            if (DeleteMode)
+            {
+                for (int x = startX; x <= EndX; x++)
+                    for (int y = startY; y <= EndY; y++)
                     {
-                        continue;
+                        int index = x + y * MapWidth;
+                        if (index >= byteMap.Length || index < 0)
+                        {
+                            continue;
+                        }
+                        byteMap[index] = byte.MaxValue;
+                        MapTiles[index] = null;
                     }
-                    byteMap[index] = (byte)choosedBlock;
-                    MapTiles[index] = new Tile();
-                    MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
-                }
+            }
+            else
+            {
+                for (int x = startX; x <= EndX; x++)
+                    for (int y = startY; y <= EndY; y++)
+                    {
+                        int index = x + y * MapWidth;
+                        if (index >= byteMap.Length || index < 0)
+                        {
+                            continue;
+                        }
+                        byteMap[index] = (byte)choosedBlock;
+                        MapTiles[index] = new Tile();
+                        MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
+                    }
+            }
         }
         private void LineFill(float startX, float startY, int EndX, int EndY)
         {
@@ -263,10 +282,19 @@ namespace AxMC_Realms_ME
                         switch (Mode)
                         {
                             case Modes.None:
-                                byteMap[index] = (byte)choosedBlock;
-                                MapTiles[index] = new Tile();
-                                MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
-                                break;
+                                if (!DeleteMode)
+                                {
+                                    byteMap[index] = (byte)choosedBlock;
+                                    MapTiles[index] = new Tile();
+                                    MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
+                                    break;
+                                }
+                                else
+                                {
+                                    byteMap[index] = byte.MaxValue;
+                                    MapTiles[index] = null;
+                                    break;
+                                }
                             case Modes.Picker:
                                 choosedBlock = byteMap[index];
                                 Tile.nextTileSrcPos = 16 * (choosedBlock % 6);
@@ -287,10 +315,6 @@ namespace AxMC_Realms_ME
                             case Modes.LineFill:
                                 LineFill(RectFill.X, RectFill.Y, RectFill.Width, RectFill.Height);
                                 Mode = Modes.None;
-                                break;
-                            case Modes.Delete:
-                                byteMap[index] = byte.MaxValue;
-                                MapTiles[index] = null;
                                 break;
                         }
                     }
@@ -375,19 +399,16 @@ namespace AxMC_Realms_ME
             }
             if (e.Key == Keys.D)
             {
-                if (Mode != Modes.Delete)
+                if (DeleteMode = !DeleteMode)
                 {
-                    Mode = Modes.Delete;
                     Console.WriteLine("Youre in deleting mode");
                 }
                 else
                 {
-                    Mode = Modes.None;
+                    DeleteMode = false;
                     Console.WriteLine("Youre in normal mode");
                 }
             }
-
-
         }
         bool gridblockfound;
         protected override void Draw(GameTime gameTime)
@@ -446,13 +467,26 @@ namespace AxMC_Realms_ME
                     EndY = Startyy;
                 }
                 var v = new Vector2();
-                for (int x = startX; x <= EndX; x++)
-                    for (int y = startY; y <= EndY; y++)
-                    {
-                        v.X = x;
-                        v.Y = y;
-                        _spriteBatch.Draw(GridTile, v * blockSize, null, Color.DeepSkyBlue, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
-                    }
+                if (DeleteMode)
+                {
+                    for (int x = startX; x <= EndX; x++)
+                        for (int y = startY; y <= EndY; y++)
+                        {
+                            v.X = x;
+                            v.Y = y;
+                            _spriteBatch.Draw(GridTile, v * blockSize, null, Color.Red, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                        }
+                }
+                else
+                {
+                    for (int x = startX; x <= EndX; x++)
+                        for (int y = startY; y <= EndY; y++)
+                        {
+                            v.X = x;
+                            v.Y = y;
+                            _spriteBatch.Draw(GridTile, v * blockSize, null, Color.DeepSkyBlue, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                        }
+                }
             }
             else if (Mode == Modes.LineFill)
             {
@@ -460,18 +494,17 @@ namespace AxMC_Realms_ME
                 _spriteBatch.Draw(GridTile, RectFill.Location.ToVector2() * blockSize, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
                 _spriteBatch.Draw(GridTile, new Vector2(RectFill.Width, RectFill.Height) * blockSize, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
             }
-            else if (gridblockfound)
+            else if (gridblockfound && Mode == Modes.None)
             {
-                if (Mode == Modes.None)
-                {
-                    _spriteBatch.Draw(GridTile, choosedBlockPos, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
-                    gridblockfound = false;
-                }
-                else if (Mode == Modes.Delete)
+                if (DeleteMode)
                 {
                     _spriteBatch.Draw(GridTile, choosedBlockPos, null, Color.Red, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
-                    gridblockfound = false;
                 }
+                else
+                {
+                    _spriteBatch.Draw(GridTile, choosedBlockPos, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                }
+                gridblockfound = false;
             }
             _spriteBatch.Draw(TileSet, new Vector2(Window.ClientBounds.Width - TileSet.Width - 10, 90), Color.White);
             _spriteBatch.Draw(GridTile, new Rectangle(Window.ClientBounds.Width - TileSet.Width - 11 + choosedBlock * 16, 89, 18, 18), Color.Yellow);
