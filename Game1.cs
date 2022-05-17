@@ -4,6 +4,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using nekoT;
+using AxMC_Realms_ME.Map;
 
 namespace AxMC_Realms_ME
 {
@@ -13,13 +15,13 @@ namespace AxMC_Realms_ME
         public static Vector2[] MapBlocks;
         public static int MapWidth = 256;
         public static byte[] byteMap;
+        public static Entity[] Entities;
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         private int blockSize = 25;
         private float _blockSize;
 
-        byte[] Entities;
         bool ShowGrid;
         bool DeleteMode;
         int ScrollVal;
@@ -32,7 +34,7 @@ namespace AxMC_Realms_ME
         Point TMPos; // Tiled mouse Pos
 
         Texture2D GridTile, GridPixel;
-        Texture2D TileSet, EntsSet;
+        Texture2D TileSet;
         Texture2D Picker, Bucket;
         public Game1()
         {
@@ -51,6 +53,7 @@ namespace AxMC_Realms_ME
             // TODO: Add your initialization logic here
             byteMap = new byte[MapWidth * MapWidth];
             MapTiles = new Tile[byteMap.Length];
+            Entities = new Entity[byteMap.Length];
             Array.Fill<byte>(byteMap, 255);
             _blockSize = 1f / blockSize;
             Console.WriteLine("Welcome to the AxMC Realms Map Editor!\n" +
@@ -70,9 +73,11 @@ namespace AxMC_Realms_ME
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             var w = Color.White;
             var t = Color.Transparent;
-            TileSet = Content.Load<Texture2D>("MCRTile");// it probably try network sorry
-            Picker = Content.Load<Texture2D>("picker");// it probably try network sorry
-            Bucket = Content.Load<Texture2D>("busket");// it probably try network sorry
+            TileSet = Content.Load<Texture2D>("MCRTile");
+            Entity.SpriteSheets[0] = Content.Load<Texture2D>("ImpostorMask");
+            Entity.SpriteSheets[1] = Content.Load<Texture2D>("SussyPortals");
+            Picker = Content.Load<Texture2D>("picker");
+            Bucket = Content.Load<Texture2D>("busket");
             GridTile = new Texture2D(GraphicsDevice, 16, 16);
             GridTile.SetData(new Color[]
             {
@@ -283,16 +288,28 @@ namespace AxMC_Realms_ME
                         {
                             case Modes.None:
                                 if (!DeleteMode)
-                                {
-                                    byteMap[index] = (byte)choosedBlock;
-                                    MapTiles[index] = new Tile();
-                                    MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
+
+                                {if (choosedBlock < 6)
+                                    {
+                                        byteMap[index] = (byte)choosedBlock;
+                                        MapTiles[index] = new Tile();
+                                        MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
+                                    }
+                                    else
+                                    {
+                                        Entities[index] = new()
+                                        {
+                                            id = (byte)(choosedBlock - 6)
+                                        };
+                                        Entities[index].SpriteId = Entities[index].id < 1 ? 0 : 1;
+                                    }
                                     break;
                                 }
                                 else
                                 {
                                     byteMap[index] = byte.MaxValue;
                                     MapTiles[index] = null;
+                                    Entities[index] = null;
                                     break;
                                 }
                             case Modes.Picker:
@@ -336,19 +353,25 @@ namespace AxMC_Realms_ME
                 case Keys.Enter:
                     Console.WriteLine("Write map name you want to save");
                     string path = Console.ReadLine();
-                    Map.Save(byteMap, MapWidth, path);
+                    byte[] mapents = new byte[Entities.Length];
+                    for(int i = 0; i < Entities.Length; i++)
+                    {
+                        if (Entities[i] == null) { mapents[i] = 255; continue; }
+                        mapents[i] = Entities[i].id;
+                    }
+                    nekoT.Map.Save(byteMap, mapents, MapWidth, path);
                     Console.WriteLine($"Map saved in {path}.json");
                     break;
                 case Keys.Space:
                     Console.WriteLine("Write map name you want to load");
                     path = Console.ReadLine();
-                    Map.Load(path);
+                    nekoT.Map.Load(path);
                     Console.WriteLine($"Map loaded from {path}.json");
                     break;
                 case Keys.C:
                     Array.Fill(byteMap, (byte)choosedBlock);
                     Array.Fill(MapTiles, new Tile() { SrcRect = new Rectangle(Tile.nextTileSrcPos, 0, 16, 16) });
-                    break;
+                    break;/*
                 default:
                     int a = (int)char.GetNumericValue(e.Character) - 1;
                     if (a > -1)
@@ -359,7 +382,7 @@ namespace AxMC_Realms_ME
                         Tile.nextTileSrcPos = 16 * (choosedBlock % 6);
                     }
                     else if (a >= 6) { Console.WriteLine("Welding... choose value from 1 to 6!"); }
-                    break;
+                    break;*/ // removed due scroll is better
             }
             if (!ShowGrid && (e.Key == Keys.Tab))
             {
@@ -420,8 +443,15 @@ namespace AxMC_Realms_ME
                 for (int y = 0; y < MapWidth; y++)
                 {
                     int index = x + y * MapWidth;
-                    if (index > MapTiles.Length || MapTiles[index] is null) continue;
-                    _spriteBatch.Draw(TileSet, new Vector2(x, y) * blockSize, MapTiles[index].SrcRect, Color.White, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                    if (index > MapTiles.Length ) continue;
+                    if (MapTiles[index] != null)
+                    {
+                        _spriteBatch.Draw(TileSet, new Vector2(x, y) * blockSize, MapTiles[index].SrcRect, Color.White, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                    }
+                    if (Entities[index] != null)
+                    {
+                        _spriteBatch.Draw(Entity.SpriteSheets[Entities[index].SpriteId], new Vector2(x, y) * blockSize, Entity.SRect[Entities[index].id], Color.White, 0, Vector2.Zero, (Vector2.One*25) / Entity.SRect[Entities[index].id].Size.ToVector2(), 0, 0);
+                    }
                 }
             for (int x = 0; x < GraphicsDevice.Viewport.Width; x += blockSize)
             {
@@ -506,8 +536,12 @@ namespace AxMC_Realms_ME
                 }
                 gridblockfound = false;
             }
-            _spriteBatch.Draw(TileSet, new Vector2(Window.ClientBounds.Width - TileSet.Width - 10, 90), Color.White);
-            _spriteBatch.Draw(GridTile, new Rectangle(Window.ClientBounds.Width - TileSet.Width - 11 + choosedBlock * 16, 89, 18, 18), Color.Yellow);
+            var BlockinvPos = new Vector2(Window.ClientBounds.Width - TileSet.Width - 16*3 - 10, 90);
+            _spriteBatch.Draw(TileSet, BlockinvPos, Color.White);
+            _spriteBatch.Draw(Entity.SpriteSheets[0], new Rectangle((int)BlockinvPos.X + TileSet.Width, (int)BlockinvPos.Y, 16, 16), Color.White);
+            BlockinvPos.X += TileSet.Width + 16;
+            _spriteBatch.Draw(Entity.SpriteSheets[1], new Rectangle((int)BlockinvPos.X,(int)BlockinvPos.Y, 32,16), Color.White);
+            _spriteBatch.Draw(GridTile, new Rectangle(Window.ClientBounds.Width - TileSet.Width - 16*3 - 11 + choosedBlock * 16, 89, 18, 18), Color.Yellow);
             _spriteBatch.End();
             // TODO: Add your drawing code here
 
