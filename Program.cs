@@ -10,11 +10,8 @@ namespace AxMC_Realms_ME
         {
             Console.BufferWidth = 400;
             Console.WindowWidth = 40;
-            try {
                 using (var game = new Game1())
                     game.Run();
-            }
-            catch(Exception e) { File.WriteAllText("SendThisToNekoT", e.Message); }
         }
     }
 }

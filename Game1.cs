@@ -91,11 +91,7 @@ namespace AxMC_Realms_ME
 
             TileSet = Content.Load<Texture2D>("MCRTile");
 
-            Entity.SpriteSheets = new[] {
-                Content.Load<Texture2D>("ImpostorMask"),
-            Content.Load<Texture2D>("SussyPortals"),
-            Content.Load<Texture2D>("ForestObstacles")
-            };
+            Entity.SpriteSheets = Content.Load<Texture2D>("Entities");
 
             Picker = Content.Load<Texture2D>("picker");
             Bucket = Content.Load<Texture2D>("busket");
@@ -381,7 +377,7 @@ namespace AxMC_Realms_ME
             switch (e.Key)
             {
                 case Keys.Enter:
-                    Console.WriteLine("Write map name you want to save");
+                    Console.WriteLine("Write map name you want to save (or path)");
 
                     string path = Console.ReadLine();
                     byte[] mapents = new byte[Entities.Length];
@@ -462,7 +458,6 @@ namespace AxMC_Realms_ME
             if (e.Key == Keys.A) Anims = !Anims;
             if (e.Key == Keys.Tab) ShowGrid = !ShowGrid;
         }
-        bool gridblockfound;
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
@@ -485,30 +480,23 @@ namespace AxMC_Realms_ME
                     }
                     if (Entities[index] is Entity ent)
                     {
-                        _spriteBatch.Draw(Entity.SpriteSheets[ent.SpriteId], blockpos, Entity.SRect[ent.Id], Color.White, 0, Vector2.Zero, (Vector2.One * 25) / Entity.SRect[Entities[index].Id].Size.ToVector2(), 0, 0);
+                        _spriteBatch.Draw(Entity.SpriteSheets, blockpos, Entity.SRect[ent.Id], Color.White, 0, Vector2.Zero, (Vector2.One * 25) / Entity.SRect[Entities[index].Id].Size.ToVector2(), 0, 0);
                     }
                 }
-            // Grid loop, also that yellow highlight loop too
-            for (int x = 0; x < GraphicsDevice.Viewport.Width; x += blockSize)
+            blockpos.X = TMPos.X * 25; // INSANE OPTIMIZATION FOR YELLOW/RED HIGHLIGHT
+            blockpos.Y = TMPos.Y * 25;
+            // Grid loop
+            if (ShowGrid)
             {
-                // Draw horizontal grid line
-                if (ShowGrid) _spriteBatch.Draw(GridPixel, new Rectangle(x, 0, 1, GraphicsDevice.Viewport.Height), Color.White);
-                for (int y = 0; y < GraphicsDevice.Viewport.Height; y += blockSize)
+                for (int x = 0; x < GraphicsDevice.Viewport.Width; x += blockSize)
                 {
-                    //Draw vertical grid line
-                    if (ShowGrid) _spriteBatch.Draw(GridPixel, new Rectangle(0, y, GraphicsDevice.Viewport.Width, 1), Color.White);
-
-                    // this code probably need change, Find yellow highlight pos
-                    if (!gridblockfound)
+                    // Draw vertical grid line
+                    _spriteBatch.Draw(GridPixel, new Rectangle(x, 0, 1, GraphicsDevice.Viewport.Height), Color.White);
+                    for (int y = 0; y < GraphicsDevice.Viewport.Height; y += blockSize)
                     {
-                        if (gridblockfound = (TMPos.X == x * _blockSize && TMPos.Y == y * _blockSize))
-                        {
-                            blockpos.X = x;
-                            blockpos.Y = y;
-                            continue;
-                        }
+                        //Draw horizontal grid line
+                        _spriteBatch.Draw(GridPixel, new Rectangle(0, y, GraphicsDevice.Viewport.Width, 1), Color.White);
                     }
-                    // this code probably need change
                 }
             }
 
@@ -547,16 +535,14 @@ namespace AxMC_Realms_ME
                 _spriteBatch.Draw(GridTile, new Vector2(RectFill.Width, RectFill.Height) * blockSize, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
             }
 
-            else if (gridblockfound && Mode == Modes.None) // Draw Yellow/Red highlight
+            else if (Mode == Modes.None) // Draw Yellow/Red highlight
             {
                 _spriteBatch.Draw(GridTile, blockpos, null, DeleteMode ? Color.Red : Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
-                gridblockfound = false;
             }
 
-            var BlockinvPos = new Vector2(Window.ClientBounds.Width - 16 * 3 - 10, 36);
+            var BlockinvPos = new Vector2(Window.ClientBounds.Width - 16 * Entity.SRect.Length - 10, 36); // 10 is small offset, so it look cool :sunglasses:
 
-            _spriteBatch.Draw(Entity.SpriteSheets[0], new Rectangle((int)BlockinvPos.X, (int)BlockinvPos.Y, 16, 16), Color.White);
-            _spriteBatch.Draw(Entity.SpriteSheets[1], new Rectangle((int)BlockinvPos.X + 16, (int)BlockinvPos.Y, 32, 16), Color.White);
+            _spriteBatch.Draw(Entity.SpriteSheets, new Rectangle((int)BlockinvPos.X, (int)BlockinvPos.Y, 16 * Entity.SRect.Length, 16), Color.White);
 
             BlockinvPos.X -= TileSet.Width;
 
