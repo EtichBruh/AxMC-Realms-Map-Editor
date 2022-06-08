@@ -1,11 +1,10 @@
 ﻿using AxMC_Realms_Client.Map;
+using AxMC_Realms_ME.Map;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
-using nekoT;
-using AxMC_Realms_ME.Map;
 
 namespace AxMC_Realms_ME
 {
@@ -16,6 +15,7 @@ namespace AxMC_Realms_ME
         public static int MapWidth = 256;
         public static byte[] byteMap;
         public static Entity[] Entities;
+        public static int numTiles = 9;
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -23,6 +23,7 @@ namespace AxMC_Realms_ME
         private float _blockSize;
 
         bool ShowGrid;
+        bool Anims;
         bool DeleteMode;
         int ScrollVal;
         int choosedBlock = 0;
@@ -47,24 +48,32 @@ namespace AxMC_Realms_ME
             _graphics.ApplyChanges();
             Window.AllowUserResizing = true;
         }
-
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
+
             byteMap = new byte[MapWidth * MapWidth];
             MapTiles = new Tile[byteMap.Length];
             Entities = new Entity[byteMap.Length];
+
             Array.Fill<byte>(byteMap, 255);
+            // Set blocksize factor. Will be removed with camera
             _blockSize = 1f / blockSize;
-            Console.WriteLine("Welcome to the AxMC Realms Map Editor!\n" +
-                " Choose value from 1 to 6 to switch tiles.\n" +
-                " Press Z to activate picker mode.\n" +
+
+            Console.WriteLine(
+                "Welcome to the AxMC Realms Map Editor!\n" +
+                " Scroll mouse wheel to choose block.\n" +
+                " Press Z for picker mode.\n" +
                 " Press X for bucket mode.\n" +
-                " Press C to full fill map with choosed block.\n" +
-                " Press F to activate rectangle filling mode.\n Press S to activate line filling mode.\n Press D to delete ( press again to draw ).\n" +
+                " Press C to fill map with choosed block.\n" +
+                " Press F for rectangle filling mode.\n" +
+                " Press S for line filling mode.\n" +
+                " Press D to delete ( Toggleable ).\n" +
+                " Press A to toggle animations.\n" +
                 " TAB to show grid.\n" +
                 " Enter to save map.\n" +
-                " Space to load map.\n Have fun!");
+                " Space to load map.\n" +
+                "Have fun!");
             base.Initialize();
         }
 
@@ -174,7 +183,6 @@ namespace AxMC_Realms_ME
                         }
                         byteMap[index] = (byte)choosedBlock;
                         MapTiles[index] = new Tile();
-                        MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
                     }
             }
         }
@@ -191,7 +199,6 @@ namespace AxMC_Realms_ME
                 }
                 byteMap[index] = (byte)choosedBlock;
                 MapTiles[index] = new Tile();
-                MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
                 if (startY != EndY)
                 {
                     d.Y = EndY - startY;
@@ -246,7 +253,6 @@ namespace AxMC_Realms_ME
                 }
                 byteMap[index] = filler;
                 MapTiles[index] = new Tile();
-                MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
                 var lastNode = current;
                 current = nodePool.Get();
                 current.state = 0;
@@ -267,41 +273,52 @@ namespace AxMC_Realms_ME
                 if (ScrollVal < MState.ScrollWheelValue && choosedBlock > 0)
                 {
                     choosedBlock--;
-                    Tile.nextTileSrcPos = 16 * (choosedBlock % 6);
+                    Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
                 }
                 else if (ScrollVal > MState.ScrollWheelValue)
                 {
                     choosedBlock++;
-                    Tile.nextTileSrcPos = 16 * (choosedBlock % 6);
+                    Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
                 }
                 if (Mode == Modes.RectangleFill || Mode == Modes.LineFill)
                 {
                     RectFill.Width = TMPos.X;
                     RectFill.Height = TMPos.Y;
                 }
+                if (Anims)
+                {
+                    for (int i = 0; i < MapTiles.Length; i++)
+                    {
+                        if (byteMap[i] != 255 && byteMap[i] >= 7)
+                        {
+                            var tile = MapTiles[i];
+                            if((tile.SrcRect.Y += 16) >= 512)
+                            {
+                                tile.SrcRect.Y = 0;
+                            }
+                        }
+                    }
+                }
+
                 if (MState.LeftButton == ButtonState.Pressed)
                 {
                     var index = TMPos.X + TMPos.Y * MapWidth;
+
                     if (index < MapTiles.Length && index > -1)
                     {
                         switch (Mode)
                         {
                             case Modes.None:
                                 if (!DeleteMode)
-
-                                {if (choosedBlock < 6)
+                                {
+                                    if (choosedBlock < numTiles)
                                     {
                                         byteMap[index] = (byte)choosedBlock;
                                         MapTiles[index] = new Tile();
-                                        MapTiles[index].SrcRect.X = Tile.nextTileSrcPos;
                                     }
                                     else
                                     {
-                                        Entities[index] = new()
-                                        {
-                                            id = (byte)(choosedBlock - 6)
-                                        };
-                                        Entities[index].SpriteId = Entities[index].id < 1 ? 0 : 1;
+                                        Entities[index] = new((byte)(choosedBlock - numTiles));
                                     }
                                     break;
                                 }
@@ -314,31 +331,31 @@ namespace AxMC_Realms_ME
                                 }
                             case Modes.Picker:
                                 choosedBlock = byteMap[index];
-                                Tile.nextTileSrcPos = 16 * (choosedBlock % 6);
-                                Console.WriteLine(choosedBlock);
+
+                                Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
                                 Mouse.SetCursor(MouseCursor.Arrow);
+
                                 Mode = Modes.None;
                                 break;
                             case Modes.Bucket:
                                 Fill(TMPos.X, (int)(MState.Y * _blockSize));
                                 Mouse.SetCursor(MouseCursor.Arrow);
+
                                 Mode = Modes.None;
                                 break;
                             case Modes.RectangleFill:
                                 RectangleFill(RectFill.X, RectFill.Y, RectFill.Width, RectFill.Height);
                                 IsMouseVisible = true;
+
                                 Mode = Modes.None;
                                 break;
                             case Modes.LineFill:
                                 LineFill(RectFill.X, RectFill.Y, RectFill.Width, RectFill.Height);
+
                                 Mode = Modes.None;
                                 break;
                         }
                     }
-                    /*if (Mode == 0 && index < MapTiles.Length && index > -1 && byteMap[index] != (byte)choosedBlock)
-                    {
-
-                    }*/
                 }
             }
             // TODO: Add your update logic here
@@ -354,10 +371,10 @@ namespace AxMC_Realms_ME
                     Console.WriteLine("Write map name you want to save");
                     string path = Console.ReadLine();
                     byte[] mapents = new byte[Entities.Length];
-                    for(int i = 0; i < Entities.Length; i++)
+                    for (int i = 0; i < Entities.Length; i++)
                     {
-                        if (Entities[i] == null) { mapents[i] = 255; continue; }
-                        mapents[i] = Entities[i].id;
+                        if (Entities[i] == null) { mapents[i] = 255; continue; } // Generate entity map
+                        mapents[i] = Entities[i].Id;
                     }
                     nekoT.Map.Save(byteMap, mapents, MapWidth, path);
                     Console.WriteLine($"Map saved in {path}.json");
@@ -416,21 +433,19 @@ namespace AxMC_Realms_ME
             if (e.Key == Keys.S && Mode != Modes.LineFill)
             {
                 Mode = Modes.LineFill;
+                // set starting point
                 RectFill.X = TMPos.X;
                 RectFill.Y = TMPos.Y;
+
                 Console.WriteLine("Youre in line filling mode");
             }
             if (e.Key == Keys.D)
             {
-                if (DeleteMode = !DeleteMode)
-                {
-                    Console.WriteLine("Youre in deleting mode");
-                }
-                else
-                {
-                    DeleteMode = false;
-                    Console.WriteLine("Youre in normal mode");
-                }
+                DeleteMode = !DeleteMode; // Toggle
+            }
+            if (e.Key == Keys.A)
+            {
+                Anims = !Anims; // Toggle
             }
         }
         bool gridblockfound;
@@ -443,25 +458,30 @@ namespace AxMC_Realms_ME
                 for (int y = 0; y < MapWidth; y++)
                 {
                     int index = x + y * MapWidth;
-                    if (index > MapTiles.Length ) continue;
-                    if (MapTiles[index] != null)
+                    if (index > MapTiles.Length)
+                        continue;
+                    var position = new Vector2(x, y) * blockSize;
+
+                    if (MapTiles[index] is Tile tile)
                     {
-                        _spriteBatch.Draw(TileSet, new Vector2(x, y) * blockSize, MapTiles[index].SrcRect, Color.White, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                        _spriteBatch.Draw(TileSet, position, tile.SrcRect, Color.White, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
                     }
                     if (Entities[index] != null)
                     {
-                        _spriteBatch.Draw(Entity.SpriteSheets[Entities[index].SpriteId], new Vector2(x, y) * blockSize, Entity.SRect[Entities[index].id], Color.White, 0, Vector2.Zero, (Vector2.One*25) / Entity.SRect[Entities[index].id].Size.ToVector2(), 0, 0);
+                        _spriteBatch.Draw(Entity.SpriteSheets[Entities[index].SpriteId], position, Entity.SRect[Entities[index].Id], Color.White, 0, Vector2.Zero, (Vector2.One * 25) / Entity.SRect[Entities[index].Id].Size.ToVector2(), 0, 0);
                     }
                 }
+
             for (int x = 0; x < GraphicsDevice.Viewport.Width; x += blockSize)
             {
 
                 for (int y = 0; y < GraphicsDevice.Viewport.Height; y += blockSize)
                 {
                     if (ShowGrid)
-                    {
+                    { //Draw vertical grid line
                         _spriteBatch.Draw(GridPixel, new Rectangle(0, y, GraphicsDevice.Viewport.Width, 1), Color.White);
                     }
+                    // this code probably need change
                     if (!gridblockfound)
                     {
                         if (gridblockfound = (TMPos.X == x * _blockSize && TMPos.Y == y * _blockSize))
@@ -471,9 +491,10 @@ namespace AxMC_Realms_ME
                             continue;
                         }
                     }
+                    // this code probably need change
                 }
                 if (ShowGrid)
-                {
+                { // Draw horizontal grid line
                     _spriteBatch.Draw(GridPixel, new Rectangle(x, 0, 1, GraphicsDevice.Viewport.Height), Color.White);
                 }
             }
@@ -536,12 +557,18 @@ namespace AxMC_Realms_ME
                 }
                 gridblockfound = false;
             }
-            var BlockinvPos = new Vector2(Window.ClientBounds.Width - TileSet.Width - 16*3 - 10, 90);
-            _spriteBatch.Draw(TileSet, BlockinvPos, Color.White);
-            _spriteBatch.Draw(Entity.SpriteSheets[0], new Rectangle((int)BlockinvPos.X + TileSet.Width, (int)BlockinvPos.Y, 16, 16), Color.White);
-            BlockinvPos.X += TileSet.Width + 16;
-            _spriteBatch.Draw(Entity.SpriteSheets[1], new Rectangle((int)BlockinvPos.X,(int)BlockinvPos.Y, 32,16), Color.White);
-            _spriteBatch.Draw(GridTile, new Rectangle(Window.ClientBounds.Width - TileSet.Width - 16*3 - 11 + choosedBlock * 16, 89, 18, 18), Color.Yellow);
+            var BlockinvPos = new Vector2(Window.ClientBounds.Width - 16 * 3 - 10, 36); // - TileSet.Width
+
+            _spriteBatch.Draw(Entity.SpriteSheets[0], new Rectangle((int)BlockinvPos.X, (int)BlockinvPos.Y, 16, 16), Color.White);
+
+            _spriteBatch.Draw(Entity.SpriteSheets[1], new Rectangle((int)BlockinvPos.X + 16, (int)BlockinvPos.Y, 32, 16), Color.White);
+
+            BlockinvPos.X -= TileSet.Width;
+
+            _spriteBatch.Draw(TileSet, BlockinvPos, new(0, 0, TileSet.Width, 16), Color.White);
+
+            _spriteBatch.Draw(GridTile, BlockinvPos + new Vector2(choosedBlock * 16 - 1, -1), null, Color.Yellow, 0, Vector2.Zero, 1.125f, 0, 0);
+
             _spriteBatch.End();
             // TODO: Add your drawing code here
 

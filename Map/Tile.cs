@@ -12,5 +12,13 @@ namespace AxMC_Realms_Client.Map
         public static Vector2 SharedPos = Vector2.Zero;
         public static int nextTileSrcPos;
         public Rectangle SrcRect = new(0,0,16,16);
+        public Tile(int id)
+        {
+            SrcRect.X = 16 * (id % 7); // 7 is the amount of tiles on MCRTile
+        }
+        public Tile()
+        {
+            SrcRect.X = nextTileSrcPos;
+        }
     }
 }

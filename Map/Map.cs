@@ -32,26 +32,37 @@ namespace nekoT
             using (JsonDocument jsonData = JsonDocument.Parse(File.ReadAllText(path + ".json")))
             {
                 Game1.byteMap = JsonSerializer.Deserialize<byte[]>(jsonData.RootElement.GetProperty("Data").GetRawText());
-                entids = JsonSerializer.Deserialize<byte[]>(jsonData.RootElement.GetProperty("Entities").GetRawText());
+                try
+                {
+                    entids = JsonSerializer.Deserialize<byte[]>(jsonData.RootElement.GetProperty("Entities").GetRawText());
+                }
+                catch { entids = Array.Empty<byte>(); }
                 Size.X = jsonData.RootElement.GetProperty("width").GetInt32();
             }
             Size.Y = Game1.byteMap.Length / Size.X;
             Game1.MapTiles = new Tile[Game1.byteMap.Length];
             Game1.Entities = new AxMC_Realms_ME.Map.Entity[Game1.byteMap.Length];
             Game1.MapBlocks = new Vector2[Game1.byteMap.Length];
-            for (int i = 0; i < Game1.byteMap.Length; i++)
+            if (entids.Length > 0)
             {
-                byte number = Game1.byteMap[i];
-                byte entity = entids[i];
-                if (number == 255) continue;
-                Game1.MapTiles[i] = new Tile();
-                Game1.MapTiles[i].SrcRect.X = 16 * (number % 6);
-                if (entity == 255) continue;
-                Game1.Entities[i] = new()
+                for (int i = 0; i < Game1.byteMap.Length; i++)
                 {
-                    id = entity,
-                    SpriteId = entity < 1 ? 0 : 1
-                };
+                    byte Id = Game1.byteMap[i];
+                    byte EntityId = entids[i];
+                    if (Id == 255) continue;
+                    Game1.MapTiles[i] = new Tile(Id);
+                    if (EntityId == 255) continue;
+                    Game1.Entities[i] = new(EntityId);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Game1.byteMap.Length; i++)
+                {
+                    byte id = Game1.byteMap[i];
+                    if (id == 255) continue;
+                    Game1.MapTiles[i] = new Tile(id);
+                }
             }
         }
     }
