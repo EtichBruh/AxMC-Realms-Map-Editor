@@ -8,6 +8,8 @@ namespace AxMC_Realms_ME
         [STAThread]
         static void Main()
         {
+            Console.BufferWidth = 400;
+            Console.WindowWidth = 40;
             try {
                 using (var game = new Game1())
                     game.Run();
