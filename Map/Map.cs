@@ -1,9 +1,7 @@
 ﻿using AxMC_Realms_Client.Map;
 using AxMC_Realms_ME;
 using Microsoft.Xna.Framework;
-using System;
 using System.IO;
-using System.Text.Json;
 
 namespace nekoT
 {
@@ -12,32 +10,25 @@ namespace nekoT
         public static Point Size;
         public static void Save(byte[] map, byte[] mapents, int width, string path)
         {
-            using (FileStream stream = File.OpenWrite(path + ".json"))
+            // Binary Map format i designed :sunglasses:
+
+            using (BinaryWriter bw = new(File.OpenWrite(path + ".bm")))
             {
-                Utf8JsonWriter writer = new(stream);
-                writer.WriteStartObject();
-                writer.WritePropertyName("Data");
-                JsonSerializer.Serialize(writer, map);
-                writer.WritePropertyName("Entities");
-                JsonSerializer.Serialize(writer, mapents);
-                writer.WriteNumber("width", width);
-                writer.WriteEndObject();
-                writer.Flush();
-                stream.Close();
+                bw.Write(width);
+                bw.Write(map.Length);
+                bw.Write(map);
+                bw.Write(mapents);
             }
         }
         public static void Load(string path)
         {
             byte[] entids;
-            using (JsonDocument jsonData = JsonDocument.Parse(File.ReadAllText(path + ".json")))
+
+            using (BinaryReader br = new(File.OpenRead(path + ".bm")))
             {
-                Game1.byteMap = JsonSerializer.Deserialize<byte[]>(jsonData.RootElement.GetProperty("Data").GetRawText());
-                try
-                {
-                    entids = JsonSerializer.Deserialize<byte[]>(jsonData.RootElement.GetProperty("Entities").GetRawText());
-                }
-                catch { entids = Array.Empty<byte>(); }
-                Size.X = jsonData.RootElement.GetProperty("width").GetInt32();
+                Size.X = br.ReadInt32();
+                Game1.byteMap = br.ReadBytes(br.ReadInt32());
+                entids = br.ReadBytes(Game1.byteMap.Length);
             }
             Size.Y = Game1.byteMap.Length / Size.X;
             Game1.MapTiles = new Tile[Game1.byteMap.Length];
@@ -66,5 +57,5 @@ namespace nekoT
             }
         }
     }
-  //                  Game1.MapTiles[index].SrcRect.X = 16 * (number % 6);
+    //                  Game1.MapTiles[index].SrcRect.X = 16 * (number % 6);
 }

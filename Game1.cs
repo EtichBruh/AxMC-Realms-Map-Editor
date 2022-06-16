@@ -1,4 +1,5 @@
 ﻿using AxMC_Realms_Client.Map;
+using AxMC_Realms_ME.Graphics;
 using AxMC_Realms_ME.Map;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -19,8 +20,9 @@ namespace AxMC_Realms_ME
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        private int blockSize = 25;
-        private float _blockSize;
+        const int blockSize = 50;
+        const float _blockSize = 1f / blockSize;
+        const float bSscale = blockSize / 16f;// block size scale factor
 
         bool ShowGrid;
         bool Anims;
@@ -42,6 +44,7 @@ namespace AxMC_Realms_ME
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
             Window.TextInput += Window_TextInput;
+            Window.ClientSizeChanged += OnResize;
 
             _graphics.PreferredBackBufferWidth = 800;
             _graphics.PreferredBackBufferHeight = 600;
@@ -49,6 +52,12 @@ namespace AxMC_Realms_ME
 
             Window.AllowUserResizing = true;
         }
+
+        private void OnResize(object sender, EventArgs e)
+        {
+            Camera.View = GraphicsDevice.Viewport;
+        }
+
         protected override void Initialize()
         {
 
@@ -59,9 +68,6 @@ namespace AxMC_Realms_ME
 
             // fill byte map array with 255 ,because 255 is null tile
             Array.Fill<byte>(byteMap, 255);
-
-            // Set blocksize factor. Will be removed with camera
-            _blockSize = 1f / blockSize;
 
             // Welcome the user :)
             Console.WriteLine(
@@ -78,6 +84,8 @@ namespace AxMC_Realms_ME
                 " Enter to save map.\n" +
                 " Space to load map.\n" +
                 "Have fun!");
+
+            Camera.Init(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
 
             base.Initialize();
         }
@@ -115,7 +123,7 @@ namespace AxMC_Realms_ME
                 w,t,t,t,t,t,t,t,t,t,t,t,t,t,t,w,
                 w,t,t,t,t,t,t,t,t,t,t,t,t,t,t,w,
                 w,w,w,w,w,w,w,w,w,w,w,w,w,w,w,w,
-            });
+            }); // embedded texture 
             GridPixel = new Texture2D(GraphicsDevice, 1, 1);
             GridPixel.SetData(new Color[] { Color.White });
             // TODO: use this.Content to load your game content here
@@ -178,6 +186,7 @@ namespace AxMC_Realms_ME
                         }
                         byteMap[index] = byte.MaxValue;
                         MapTiles[index] = null;
+                        Entities[index] = null;
                     }
             }
             else
@@ -197,11 +206,12 @@ namespace AxMC_Realms_ME
         }
         private void LineFill(float startX, float startY, int EndX, int EndY)
         {
-            Vector2 d = new(EndX - startX, EndY - startY);
+            Vector2 d = Vector2.Normalize(new(EndX - startX, EndY - startY));
+            int RX = (int)startX, RY = (int) startY;// rounded startX and startY
 
-            while (Math.Round(startY) != EndY || Math.Round(startX) != EndX)
+            while (RY != EndY || RX != EndX)
             {
-                int index = (int)startX + (int)startY * MapWidth;
+                int index = RX + RY * MapWidth;
                 if (index >= byteMap.Length || index < 0)
                 {
                     continue;
@@ -210,13 +220,13 @@ namespace AxMC_Realms_ME
                 MapTiles[index] = new Tile();
                 if (startY != EndY)
                 {
-                    d.Y = EndY - startY;
-                    startY += Vector2.Normalize(d).Y;
+                    startY += d.Y;
+                    RY = (int)Math.Round(startY);
                 }
                 if (startX != EndX)
                 {
-                    d.X = EndX - startX;
-                    startX += Vector2.Normalize(d).X;
+                    startX += d.X;
+                    RX = (int)Math.Round(startX);
                 }
             }
         }
@@ -278,20 +288,34 @@ namespace AxMC_Realms_ME
                 ScrollVal = MState.ScrollWheelValue; // Get previous scroll value
                 MState = Mouse.GetState();
                 //Set mouse pos in tiles units ( im not sure what i said lol )
-                TMPos.X = (int)(MState.X * _blockSize);
-                TMPos.Y = (int)(MState.Y * _blockSize);
 
-                if (ScrollVal < MState.ScrollWheelValue && choosedBlock > 0)
+                if (ScrollVal < MState.ScrollWheelValue)
                 {
-                    choosedBlock--;
-                    Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                    if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
+                    {
+                        Camera.Zoom = 0.02f;
+                    }
+                    else if (choosedBlock > 0)
+                    {
+                        choosedBlock--;
+                        Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                    }
                 }
                 else if (ScrollVal > MState.ScrollWheelValue)
                 {
-                    choosedBlock++;
-                    Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
-                }
 
+                    if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
+                    {
+                        Camera.Zoom = (-0.02f);
+                    }
+                    else
+                    {
+                        choosedBlock++;
+                        Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                    }
+                }
+                Camera.Follow();
+                TMPos = (Vector2.Transform(MState.Position.ToVector2(), Matrix.Invert(Camera.Transform )) * _blockSize).ToPoint();
                 if (Mode == Modes.RectangleFill || Mode == Modes.LineFill)
                 {
                     RectFill.Width = TMPos.X;
@@ -301,10 +325,11 @@ namespace AxMC_Realms_ME
                 {
                     for (int i = 0; i < MapTiles.Length; i++)
                     {
-                        if (byteMap[i] != 255 && byteMap[i] >= 7)
+                        if (byteMap[i] != 255 && (byteMap[i] == 5 || byteMap[i] == 6))
                         {
                             var tile = MapTiles[i];
-                            if ((tile.SrcRect.Y += 16) >= 512) tile.SrcRect.Y = 0;
+                            if ((tile.SrcRect.Y += 16) >= 512)
+                                tile.SrcRect.Y = 0;
                         }
                     }
                 }
@@ -329,15 +354,14 @@ namespace AxMC_Realms_ME
                                     {
                                         Entities[index] = new((byte)(choosedBlock - numTiles));
                                     }
-                                    break;
                                 }
                                 else
                                 {
                                     byteMap[index] = byte.MaxValue;
                                     MapTiles[index] = null;
                                     Entities[index] = null;
-                                    break;
                                 }
+                                break;
                             case Modes.Picker:
                                 choosedBlock = byteMap[index];
 
@@ -390,19 +414,22 @@ namespace AxMC_Realms_ME
 
                     nekoT.Map.Save(byteMap, mapents, MapWidth, path);
 
-                    Console.WriteLine($"Map saved in {path}.json");
+                    Console.WriteLine($"Map saved in {path}.bm");
                     break;
 
                 case Keys.Space:
                     Console.WriteLine("Write map name you want to load");
                     path = Console.ReadLine();
                     nekoT.Map.Load(path);
-                    Console.WriteLine($"Map loaded from {path}.json");
+                    Console.WriteLine($"Map loaded from {path}.bm");
                     break;
 
                 case Keys.C:
                     Array.Fill(byteMap, (byte)choosedBlock);
-                    Array.Fill(MapTiles, new Tile() { SrcRect = new Rectangle(Tile.nextTileSrcPos, 0, 16, 16) });
+                    for (int i = 0; i < MapTiles.Length; i++)
+                    {
+                        MapTiles[i] = new Tile();
+                    } // Array.Fill(MapTiles, new Tile()); removed due it make all elements have same reference
                     break;
                     #region removed
                     /*
@@ -458,11 +485,12 @@ namespace AxMC_Realms_ME
             if (e.Key == Keys.A) Anims = !Anims;
             if (e.Key == Keys.Tab) ShowGrid = !ShowGrid;
         }
+        
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            _spriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: Camera.Transform);
 
             var blockpos = new Vector2();
 
@@ -470,35 +498,31 @@ namespace AxMC_Realms_ME
                 for (int y = 0; y < MapHeight; y++)
                 {
                     int index = x + y * MapWidth;
-                    // length check removed due its not possible :D
+                    // length check removed due its not possible to trigger :D
                     blockpos.X = x * blockSize;
                     blockpos.Y = y * blockSize;
 
                     if (MapTiles[index] is Tile tile)
                     {
-                        _spriteBatch.Draw(TileSet, blockpos, tile.SrcRect, Color.White, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                        _spriteBatch.Draw(TileSet, blockpos, tile.SrcRect, Color.White,0,Vector2.Zero,bSscale,0,0);
                     }
                     if (Entities[index] is Entity ent)
                     {
-                        _spriteBatch.Draw(Entity.SpriteSheets, blockpos, Entity.SRect[ent.Id], Color.White, 0, Vector2.Zero, (Vector2.One * 25) / Entity.SRect[Entities[index].Id].Size.ToVector2(), 0, 0);
+                        _spriteBatch.Draw(Entity.SpriteSheets, new Rectangle((int)blockpos.X,(int)blockpos.Y,50,50), Entity.SRect[ent.Id], Color.White);
                     }
                 }
-            blockpos.X = TMPos.X * 25; // INSANE OPTIMIZATION FOR YELLOW/RED HIGHLIGHT
-            blockpos.Y = TMPos.Y * 25;
             // Grid loop
             if (ShowGrid)
             {
-                for (int x = 0; x < GraphicsDevice.Viewport.Width; x += blockSize)
+                for (int x = 0; x < MapWidth; x ++)
                 {
                     // Draw vertical grid line
-                    _spriteBatch.Draw(GridPixel, new Rectangle(x, 0, 1, GraphicsDevice.Viewport.Height), Color.White);
-                    for (int y = 0; y < GraphicsDevice.Viewport.Height; y += blockSize)
-                    {
-                        //Draw horizontal grid line
-                        _spriteBatch.Draw(GridPixel, new Rectangle(0, y, GraphicsDevice.Viewport.Width, 1), Color.White);
-                    }
+                    _spriteBatch.Draw(GridPixel, new Rectangle(x*50, 0, (int)(1f / Camera.Transform.M11), MapHeight * 50), Color.White);
+                    //Draw horizontal grid line
+                    _spriteBatch.Draw(GridPixel, new Rectangle(0, x*50, MapWidth * 50, (int)(1f / Camera.Transform.M11)),Color.White);
                 }
             }
+
 
             if (Mode == Modes.RectangleFill)
             {
@@ -526,20 +550,44 @@ namespace AxMC_Realms_ME
                     {
                         v.X = x;
                         v.Y = y;
-                        _spriteBatch.Draw(GridTile, v * blockSize, null, DeleteMode ? Color.Red : Color.DeepSkyBlue, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                        _spriteBatch.Draw(GridTile, v * blockSize, null, DeleteMode ? Color.Red : Color.DeepSkyBlue, 0, Vector2.Zero, bSscale, 0, 0);
                     }
             }
             else if (Mode == Modes.LineFill)
             {
-                _spriteBatch.Draw(GridTile, RectFill.Location.ToVector2() * blockSize, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
-                _spriteBatch.Draw(GridTile, new Vector2(RectFill.Width, RectFill.Height) * blockSize, null, Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                float EndX = RectFill.Width,
+                    EndY = RectFill.Height,
+                    startX = RectFill.X,
+                    startY = RectFill.Y;
+                int RX= (int)startX, RY = (int)startY;
+
+                Vector2 d = Vector2.Normalize(new(EndX - startX, EndY - startY));
+
+                while (RY != EndY || RX != EndX)
+                {
+                    _spriteBatch.Draw(GridTile, new Vector2(RX,RY) * blockSize, null, Color.Yellow, 0, Vector2.Zero, bSscale, 0, 0);
+                    if (startY != EndY)
+                    {
+                        startY += d.Y;
+                        RY =(int) Math.Round(startY);
+                    }
+                    if (startX != EndX)
+                    {
+                        startX += d.X;
+                        RX= (int)Math.Round(startX);
+                    }
+                }
             }
 
             else if (Mode == Modes.None) // Draw Yellow/Red highlight
             {
-                _spriteBatch.Draw(GridTile, blockpos, null, DeleteMode ? Color.Red : Color.Yellow, 0, Vector2.Zero, scale: 1.5625f, 0, 0);
+                _spriteBatch.Draw(GridTile, TMPos.ToVector2() * blockSize - Vector2.One, null, DeleteMode ? Color.Red : Color.Yellow, 0, Vector2.Zero, 3.25f, 0, 0);
             }
 
+            _spriteBatch.End();
+
+            // UI spritebatch
+            _spriteBatch.Begin(samplerState: SamplerState.PointClamp) ;
             var BlockinvPos = new Vector2(Window.ClientBounds.Width - 16 * Entity.SRect.Length - 10, 36); // 10 is small offset, so it look cool :sunglasses:
 
             _spriteBatch.Draw(Entity.SpriteSheets, new Rectangle((int)BlockinvPos.X, (int)BlockinvPos.Y, 16 * Entity.SRect.Length, 16), Color.White);
