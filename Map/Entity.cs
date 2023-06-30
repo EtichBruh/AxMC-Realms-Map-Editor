@@ -7,12 +7,14 @@ namespace AxMC_Realms_ME.Map
     {
         public static Texture2D SpriteSheets;
         public static Rectangle[] SRect = {
-            new Rectangle(0,0,8,9),
-            new Rectangle(8,0,8,8),
-            new Rectangle(16,0,9,8),
-            new Rectangle(25,0,6,9),
-            new Rectangle(31,0,7,11),
-            new Rectangle(38,0,11,13)};
+            new (0,0,8,9),
+            new (8,0,8,8),
+            new (16,0,9,8),
+            new (25,0,6,9),
+            new (31,0,7,11),
+            new (38,0,11,13),
+            new (49,0,12,15),
+        };
         public byte Id;
         //public int SpriteId;// sprite sheet id
 

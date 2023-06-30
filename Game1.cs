@@ -9,8 +9,20 @@ using System.Collections.Generic;
 
 namespace AxMC_Realms_ME
 {
+    static class ext
+    {
+        public static Point Divide(this Point a, int b)
+        {
+            a.X /= b;
+            a.Y /= b;
+            return a;
+        }
+    }
     public class Game1 : Game
     {
+
+
+
         public static Tile[] MapTiles;
         public static Vector2[] MapBlocks;
         public static int MapWidth = 256, MapHeight = 256;
@@ -29,6 +41,8 @@ namespace AxMC_Realms_ME
         bool DeleteMode;
         int ScrollVal;
         int choosedBlock = 0;
+        int cx;
+        int cy;
         Modes Mode = 0;
 
         Rectangle RectFill;
@@ -55,7 +69,13 @@ namespace AxMC_Realms_ME
 
         private void OnResize(object sender, EventArgs e)
         {
+            int w = Camera.View.Width, h = Camera.View.Height;
             Camera.View = GraphicsDevice.Viewport;
+            Camera.Position.X += (Camera.View.Width - w) /2;
+            Camera.Position.Y += ( Camera.View.Height - h) / 2;
+
+            cx = GraphicsDevice.Viewport.Width / 16;
+            cy = GraphicsDevice.Viewport.Height / 16;
         }
 
         protected override void Initialize()
@@ -164,15 +184,15 @@ namespace AxMC_Realms_ME
         {
             if (EndX - startX < 0)
             {
-                int Startxx = startX;
+                int swapx = startX;
                 startX = EndX;
-                EndX = Startxx;
+                EndX = swapx;
             }
             if (EndY - startY < 0)
             {
-                int Startyy = startY;
+                int swapy = startY;
                 startY = EndY;
-                EndY = Startyy;
+                EndY = swapy;
             }
             if (DeleteMode)
             {
@@ -214,7 +234,7 @@ namespace AxMC_Realms_ME
                 int index = RX + RY * MapWidth;
                 if (index >= byteMap.Length || index < 0)
                 {
-                    continue;
+                    return;
                 }
                 byteMap[index] = (byte)choosedBlock;
                 MapTiles[index] = new Tile();
@@ -283,111 +303,111 @@ namespace AxMC_Realms_ME
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
-            if (IsActive)
+            if (!IsActive) return;
+            ScrollVal = MState.ScrollWheelValue; // Get previous scroll value
+            var pos = MState.Position;
+            MState = Mouse.GetState();
+
+            if(MState.RightButton == ButtonState.Pressed)
             {
-                ScrollVal = MState.ScrollWheelValue; // Get previous scroll value
-                MState = Mouse.GetState();
-                //Set mouse pos in tiles units ( im not sure what i said lol )
+                Camera.Position += pos - MState.Position;
+            }
+            //Set mouse pos in tiles units ( im not sure what i said lol )
 
-                if (ScrollVal < MState.ScrollWheelValue)
+            if (ScrollVal < MState.ScrollWheelValue)
+            {
+                if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
                 {
-                    if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
+                    Camera.Zoom = 0.02f;
+                }
+                else if (choosedBlock > 0)
+                {
+                    choosedBlock--;
+                    Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                }
+            }
+            else if (ScrollVal > MState.ScrollWheelValue)
+            {
+
+                if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
+                {
+                    Camera.Zoom = (-0.02f);
+                }
+                else
+                {
+                    choosedBlock++;
+                    Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                }
+            }
+            Camera.Follow();
+            TMPos = (Vector2.Transform(MState.Position.ToVector2(), Matrix.Invert(Camera.Transform)) * _blockSize).ToPoint();
+            if (Mode == Modes.RectangleFill || Mode == Modes.LineFill)
+            {
+                RectFill.Width = TMPos.X;
+                RectFill.Height = TMPos.Y;
+            }
+            if (Anims)
+            {
+                for (int i = 0; i < MapTiles.Length; i++)
+                {
+                    if (byteMap[i] != 255 && (byteMap[i] == 5 || byteMap[i] == 6))
                     {
-                        Camera.Zoom = 0.02f;
-                    }
-                    else if (choosedBlock > 0)
-                    {
-                        choosedBlock--;
-                        Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                        var tile = MapTiles[i];
+                        if ((tile.SrcRect.Y += 16) >= 512)
+                            tile.SrcRect.Y = 0;
                     }
                 }
-                else if (ScrollVal > MState.ScrollWheelValue)
+            }
+
+            if (MState.LeftButton == ButtonState.Pressed)
+            {
+                var index = TMPos.X + TMPos.Y * MapWidth;
+
+                if (index < MapTiles.Length && index > -1)
                 {
-
-                    if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
+                    switch (Mode)
                     {
-                        Camera.Zoom = (-0.02f);
-                    }
-                    else
-                    {
-                        choosedBlock++;
-                        Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
-                    }
-                }
-                Camera.Follow();
-                TMPos = (Vector2.Transform(MState.Position.ToVector2(), Matrix.Invert(Camera.Transform)) * _blockSize).ToPoint();
-                if (Mode == Modes.RectangleFill || Mode == Modes.LineFill)
-                {
-                    RectFill.Width = TMPos.X;
-                    RectFill.Height = TMPos.Y;
-                }
-                if (Anims)
-                {
-                    for (int i = 0; i < MapTiles.Length; i++)
-                    {
-                        if (byteMap[i] != 255 && (byteMap[i] == 5 || byteMap[i] == 6))
-                        {
-                            var tile = MapTiles[i];
-                            if ((tile.SrcRect.Y += 16) >= 512)
-                                tile.SrcRect.Y = 0;
-                        }
-                    }
-                }
-
-                if (MState.LeftButton == ButtonState.Pressed)
-                {
-                    var index = TMPos.X + TMPos.Y * MapWidth;
-
-                    if (index < MapTiles.Length && index > -1)
-                    {
-                        switch (Mode)
-                        {
-                            case Modes.None:
-                                if (!DeleteMode)
-                                {
-                                    if (choosedBlock < numTiles)
-                                    {
-                                        byteMap[index] = (byte)choosedBlock;
-                                        MapTiles[index] = new Tile();
-                                    }
-                                    else
-                                    {
-                                        Entities[index] = new((byte)(choosedBlock - numTiles));
-                                    }
-                                }
-                                else
-                                {
-                                    byteMap[index] = byte.MaxValue;
-                                    MapTiles[index] = null;
-                                    Entities[index] = null;
-                                }
+                        case Modes.None:
+                            if (DeleteMode)
+                            {
+                                byteMap[index] = byte.MaxValue;
+                                MapTiles[index] = null;
+                                Entities[index] = null;
                                 break;
-
-                            case Modes.Picker:
-                                choosedBlock = byteMap[index];
-
-                                Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
-                                Mouse.SetCursor(MouseCursor.Arrow);
-                                Mode = Modes.None;
+                            }
+                            if (choosedBlock < numTiles)
+                            {
+                                byteMap[index] = (byte)choosedBlock;
+                                MapTiles[index] = new Tile();
                                 break;
+                            }
+                            Entities[index] = new((byte)(choosedBlock - numTiles));
+                            break;
 
-                            case Modes.Bucket:
-                                Fill(TMPos.X, (int)(MState.Y * _blockSize));
-                                Mouse.SetCursor(MouseCursor.Arrow);
-                                Mode = Modes.None;
-                                break;
+                        case Modes.Picker:
+                            choosedBlock = byteMap[index];
 
-                            case Modes.RectangleFill:
-                                RectangleFill(RectFill.X, RectFill.Y, RectFill.Width, RectFill.Height);
-                                IsMouseVisible = true;
-                                Mode = Modes.None;
-                                break;
+                            Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                            Mouse.SetCursor(MouseCursor.Arrow);
+                            Mode = Modes.None;
+                            break;
 
-                            case Modes.LineFill:
-                                LineFill(RectFill.X, RectFill.Y, RectFill.Width, RectFill.Height);
-                                Mode = Modes.None;
-                                break;
-                        }
+                        case Modes.Bucket:
+                            Fill(TMPos.X, (int)(MState.Y * _blockSize));
+                            Mouse.SetCursor(MouseCursor.Arrow);
+                            Mode = Modes.None;
+                            break;
+
+                        case Modes.RectangleFill:
+                            RectangleFill(RectFill.X, RectFill.Y, RectFill.Width, RectFill.Height);
+                            IsMouseVisible = true;
+                            Mode = Modes.None;
+                            break;
+
+                        case Modes.LineFill:
+                            LineFill(RectFill.X, RectFill.Y, RectFill.Width, RectFill.Height);
+                            Mode = Modes.None;
+                            break;
                     }
                 }
             }
@@ -402,8 +422,12 @@ namespace AxMC_Realms_ME
             {
                 case Keys.Enter:
                     Console.WriteLine("Write map name you want to save (or path)");
-
                     string path = Console.ReadLine();
+                    if (path == "")
+                    {
+                        Console.WriteLine("Wrong map name");
+                        break;
+                    }
                     byte[] mapents = new byte[Entities.Length];
 
                     for (int i = 0; i < Entities.Length; i++)
@@ -420,6 +444,9 @@ namespace AxMC_Realms_ME
                 case Keys.Space:
                     Console.WriteLine("Write map name you want to load");
                     path = Console.ReadLine();
+                    if (path == "") { 
+                    Console.WriteLine("Wrong map name");
+                        break; }
                     nekoT.Map.Load(path);
                     Console.WriteLine($"Map loaded from {path}.bm");
                     break;
@@ -476,8 +503,11 @@ namespace AxMC_Realms_ME
 
             var blockpos = new Vector2();
 
-            for (int x = 0; x < MapWidth; x++)
-                for (int y = 0; y < MapHeight; y++)
+            int camx = Math.Max(0, Camera.TPos.X);
+            int camy = Math.Max(0, Camera.TPos.Y);
+
+            for (int x = camx; x < Math.Min(cx * Camera.ScaleFactor + camx, MapWidth); x++)
+                for (int y = camy; y < Math.Min(cy * Camera.ScaleFactor + camy, MapHeight); y++)
                 {
                     int index = x + y * MapWidth;
                     // length check removed due its not possible to trigger :D
@@ -496,7 +526,7 @@ namespace AxMC_Realms_ME
 
             if (ShowGrid)
             {
-                int temp = (int)Math.Ceiling(1f / Camera.Transform.M11);
+                int temp = (int)Math.Ceiling(Camera.ScaleFactor);
                 for (int x = 0; x < MapWidth; x++)
                 {
                     // Draw vertical grid line
