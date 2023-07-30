@@ -40,9 +40,13 @@ namespace nekoT
                 {
                     byte Id = Game1.byteMap[i];
                     byte EntityId = entids[i];
+
                     if (Id == 255) continue;
+
                     Game1.MapTiles[i] = new Tile(Id);
+
                     if (EntityId == 255) continue;
+
                     Game1.Entities[i] = new(EntityId);
                 }
             }
@@ -51,7 +55,9 @@ namespace nekoT
                 for (int i = 0; i < Game1.byteMap.Length; i++)
                 {
                     byte id = Game1.byteMap[i];
+
                     if (id == 255) continue;
+
                     Game1.MapTiles[i] = new Tile(id);
                 }
             }

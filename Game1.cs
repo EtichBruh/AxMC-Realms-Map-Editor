@@ -105,6 +105,8 @@ namespace AxMC_Realms_ME
                 " Space to load map.\n" +
                 "Have fun!");
 
+            Entity.Load("EntityData.json");
+
             Camera.Init(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
 
             base.Initialize();
@@ -118,8 +120,6 @@ namespace AxMC_Realms_ME
             var t = Color.Transparent;
 
             TileSet = Content.Load<Texture2D>("MCRTile");
-
-            Entity.SpriteSheets = Content.Load<Texture2D>("Entities");
 
             Picker = Content.Load<Texture2D>("picker");
             Bucket = Content.Load<Texture2D>("busket");
@@ -341,11 +341,13 @@ namespace AxMC_Realms_ME
             }
             Camera.Follow();
             TMPos = (Vector2.Transform(MState.Position.ToVector2(), Matrix.Invert(Camera.Transform)) * _blockSize).ToPoint();
+
             if (Mode == Modes.RectangleFill || Mode == Modes.LineFill)
             {
                 RectFill.Width = TMPos.X;
                 RectFill.Height = TMPos.Y;
             }
+
             if (Anims)
             {
                 for (int i = 0; i < MapTiles.Length; i++)
@@ -520,7 +522,7 @@ namespace AxMC_Realms_ME
                     }
                     if (Entities[index] is Entity ent)
                     {
-                        _spriteBatch.Draw(Entity.SpriteSheets, new Rectangle((int)blockpos.X, (int)blockpos.Y, 50, 50), Entity.SRect[ent.Id], Color.White);
+                        _spriteBatch.Draw(TileSet, new Rectangle((int)blockpos.X, (int)blockpos.Y, 50, 50), Entity.SRect[ent.Id], Color.White);
                     }
                 }
 
@@ -604,7 +606,13 @@ namespace AxMC_Realms_ME
 
             var BlockinvPos = new Vector2(Window.ClientBounds.Width - 16 * Entity.SRect.Length - 10, 36); // 10 is small offset, so it look cool :sunglasses:
 
-            _spriteBatch.Draw(Entity.SpriteSheets, new Rectangle((int)BlockinvPos.X, (int)BlockinvPos.Y, 16 * Entity.SRect.Length, 16), Color.White);
+            var offset = 0;
+            for (int i = 0; i < Entity.SRect.Length; i++)
+            {
+                _spriteBatch.Draw(TileSet, BlockinvPos + new Vector2(offset, 0), Entity.SRect[i], Color.White);
+                offset += 16;
+            }
+            //_spriteBatch.Draw(Entity.SpriteSheets, new Rectangle((int)BlockinvPos.X, (int)BlockinvPos.Y, 16 * Entity.SRect.Length, 16), Color.White);
 
             BlockinvPos.X -= TileSet.Width;
 

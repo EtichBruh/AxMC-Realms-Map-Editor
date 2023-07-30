@@ -1,20 +1,50 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.IO;
+using System.Text.Json;
 
 namespace AxMC_Realms_ME.Map
 {
+    public enum EntityType
+    {
+        Entity,
+        Enemy,
+        Player,
+        Portal,
+        Container,
+        Projectile
+    }
+    public struct EntityData
+    {
+        public int Id;
+        public string Name;
+
+        public Rectangle Source;
+        public Vector2 Origin;
+
+        public int Scale;
+        public int Frames;
+        public int Destination;
+        public int[] Drops;
+
+        public EntityType Type;
+        public bool Collides;
+    }
+
     public class Entity
     {
-        public static Texture2D SpriteSheets;
-        public static Rectangle[] SRect = {
-            new (0,0,8,9),
-            new (8,0,8,8),
-            new (16,0,9,8),
-            new (25,0,6,9),
-            new (31,0,7,11),
-            new (38,0,11,13),
-            new (49,0,12,15),
-        };
+        public static Rectangle[] SRect;
+
+        public static void Load(string Path)
+        {
+            var data = JsonSerializer.Deserialize<EntityData[]>(File.ReadAllText(Path), new JsonSerializerOptions() { IncludeFields = true });
+            SRect = new Rectangle[data.Length];
+            for (int i = 0; i < data.Length; i++)
+            {
+                SRect[i] = data[i].Source;
+            }
+        }
+
         public byte Id;
         //public int SpriteId;// sprite sheet id
 
