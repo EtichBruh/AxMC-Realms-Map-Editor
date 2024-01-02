@@ -1,5 +1,6 @@
 ﻿using AxMC_Realms_Client.Map;
 using AxMC_Realms_ME;
+using AxMC_Realms_ME.Map;
 using Microsoft.Xna.Framework;
 using System.IO;
 
@@ -23,20 +24,22 @@ namespace nekoT
         public static void Load(string path)
         {
             byte[] entids;
+            int maplength = 0;
 
             using (BinaryReader br = new(File.OpenRead(path + ".bm")))
             {
                 Size.X = br.ReadInt32();
                 Editor.byteMap = br.ReadBytes(br.ReadInt32());
-                entids = br.ReadBytes(Editor.byteMap.Length);
+                maplength = Editor.byteMap.Length;
+                entids = br.ReadBytes(maplength);
             }
-            Size.Y = Editor.byteMap.Length / Size.X;
-            Editor.MapTiles = new Tile[Editor.byteMap.Length];
-            Editor.Entities = new AxMC_Realms_ME.Map.Entity[Editor.byteMap.Length];
-            Editor.MapBlocks = new Vector2[Editor.byteMap.Length];
+            Size.Y = maplength / Size.X;
+            Editor.MapTiles = new Tile[maplength];
+            Editor.Entities = new Entity[maplength];
+            Editor.MapBlocks = new Vector2[maplength];
             if (entids.Length > 0)
             {
-                for (int i = 0; i < Editor.byteMap.Length; i++)
+                for (int i = 0; i < maplength; i++)
                 {
                     byte Id = Editor.byteMap[i];
                     byte EntityId = entids[i];
@@ -52,7 +55,7 @@ namespace nekoT
             }
             else
             {
-                for (int i = 0; i < Editor.byteMap.Length; i++)
+                for (int i = 0; i < maplength; i++)
                 {
                     byte id = Editor.byteMap[i];
 

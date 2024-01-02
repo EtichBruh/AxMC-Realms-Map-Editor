@@ -324,7 +324,7 @@ namespace AxMC_Realms_ME
                 else if (choosedBlock > 0)
                 {
                     choosedBlock--;
-                    Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                    Tile.NextTileSrcPos = 16 * (choosedBlock % numTiles);
                 }
             }
             else if (ScrollVal > MState.ScrollWheelValue)
@@ -337,7 +337,7 @@ namespace AxMC_Realms_ME
                 else if (choosedBlock + 1 < numTiles + Entity.Data.Length)
                 {
                     choosedBlock++;
-                    Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                    Tile.NextTileSrcPos = 16 * (choosedBlock % numTiles);
                 }
                 else
                 {
@@ -394,7 +394,7 @@ namespace AxMC_Realms_ME
                         case Modes.Picker:
                             choosedBlock = byteMap[index];
 
-                            Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                            Tile.NextTileSrcPos = 16 * (choosedBlock % numTiles);
                             Mouse.SetCursor(MouseCursor.Arrow);
                             Mode = Modes.None;
                             break;

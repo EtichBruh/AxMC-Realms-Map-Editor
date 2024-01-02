@@ -20,7 +20,7 @@ namespace AxMC_Realms_Client.Map
         public static float[] AnimatedTilesTimer = [];
         public static TileData[] Data;
         public static Vector2 SharedPos = Vector2.Zero;
-        public static int nextTileSrcPos;
+        public static int NextTileSrcPos;
         public Rectangle SrcRect = new(0, 0, 16, 16);
 
         public static void Initialize(string Path)
@@ -54,7 +54,7 @@ namespace AxMC_Realms_Client.Map
         }
         public Tile()
         {
-            SrcRect.X = nextTileSrcPos;
+            SrcRect.X = NextTileSrcPos;
         }
     }
 }

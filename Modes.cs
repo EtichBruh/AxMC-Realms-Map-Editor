@@ -2,6 +2,10 @@
 {
     public enum Modes // Mode: zxc ghoul dead inside 1000-7
     {
-        None, Picker, Bucket, RectangleFill, LineFill
+        None,
+        Picker,
+        Bucket,
+        RectangleFill,
+        LineFill
     }
 }
