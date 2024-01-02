@@ -207,9 +207,8 @@ namespace AxMC_Realms_ME
                     {
                         int index = x + y * MapWidth;
                         if (index >= byteMap.Length)
-                        {
                             continue;
-                        }
+
                         byteMap[index] = byte.MaxValue;
                         MapTiles[index] = null;
                         Entities[index] = null;
@@ -222,9 +221,8 @@ namespace AxMC_Realms_ME
                     {
                         int index = x + y * MapWidth;
                         if (index >= byteMap.Length)
-                        {
                             continue;
-                        }
+
                         byteMap[index] = (byte)choosedBlock;
                         MapTiles[index] = new Tile();
                     }
@@ -239,11 +237,11 @@ namespace AxMC_Realms_ME
             {
                 int index = RX + RY * MapWidth;
                 if (index >= byteMap.Length || index < 0)
-                {
                     return;
-                }
+
                 byteMap[index] = (byte)choosedBlock;
                 MapTiles[index] = new Tile();
+                
                 if (startY != EndY)
                 {
                     startY += d.Y;
@@ -269,7 +267,6 @@ namespace AxMC_Realms_ME
 
             while (current != null)
             {
-
                 if (current.state >= 4)
                 {
                     nodePool.Free(current);
@@ -354,24 +351,19 @@ namespace AxMC_Realms_ME
             }
 
             if (Anims)
-            {
                 for (int i = 0; i < MapTiles.Length; i++)
-                {
                     if (byteMap[i] != 255 && (byteMap[i] == 5 || byteMap[i] == 6))
                     {
                         var tile = MapTiles[i];
                         if ((tile.SrcRect.Y += 16) >= 512)
                             tile.SrcRect.Y = 0;
                     }
-                }
-            }
 
             if (MState.LeftButton == ButtonState.Pressed)
             {
                 var index = TMPos.X + TMPos.Y * MapWidth;
 
                 if (index < MapTiles.Length && index > -1)
-                {
                     switch (Mode)
                     {
                         case Modes.None:
@@ -416,7 +408,6 @@ namespace AxMC_Realms_ME
                             Mode = Modes.None;
                             break;
                     }
-                }
             }
             // TODO: Add your update logic here
 

@@ -11,9 +11,7 @@ namespace nekoT
         public static Point Size;
         public static void Save(byte[] map, byte[] mapents, int width, string path)
         {
-            // Binary Map format i designed :sunglasses:
-
-            using (BinaryWriter bw = new(File.OpenWrite(path + ".bm")))
+            using (BinaryWriter bw = new(File.OpenWrite(path + ".bm"))) // Binary Map format i designed :sunglasses:
             {
                 bw.Write(width);
                 bw.Write(map.Length);
@@ -38,7 +36,6 @@ namespace nekoT
             Editor.Entities = new Entity[maplength];
             Editor.MapBlocks = new Vector2[maplength];
             if (entids.Length > 0)
-            {
                 for (int i = 0; i < maplength; i++)
                 {
                     byte Id = Editor.byteMap[i];
@@ -52,9 +49,7 @@ namespace nekoT
 
                     Editor.Entities[i] = new(EntityId);
                 }
-            }
             else
-            {
                 for (int i = 0; i < maplength; i++)
                 {
                     byte id = Editor.byteMap[i];
@@ -63,8 +58,6 @@ namespace nekoT
 
                     Editor.MapTiles[i] = new Tile(id);
                 }
-            }
         }
     }
-    //                  Game1.MapTiles[index].SrcRect.X = 16 * (number % 6);
 }
