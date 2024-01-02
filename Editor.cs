@@ -334,7 +334,7 @@ namespace AxMC_Realms_ME
                 {
                     Camera.Zoom -= 0.02f;
                 }
-                else if(choosedBlock + 1 < numTiles + Entity.Data.Length)
+                else if (choosedBlock + 1 < numTiles + Entity.Data.Length)
                 {
                     choosedBlock++;
                     Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
@@ -633,7 +633,7 @@ namespace AxMC_Realms_ME
             _spriteBatch.DrawString(Font, TMPos.ToString(), Vector2.Zero, Color.Black);
             _spriteBatch.DrawString(Font, Camera.Position.ToString(), new Vector2(0, 12), Color.Black);
             _spriteBatch.DrawString(Font, Camera.TPos.ToString() + " Camera Zoom: " + Camera.ScaleFactor.ToString(), new Vector2(0, 26), Color.Black);
-            
+
             _spriteBatch.DrawString(Font, choosedBlock < numTiles ? Tile.Data[choosedBlock].Name : Entity.Data[choosedBlock - numTiles].Name, new Vector2(0, 38), Color.Black);
 
             if (Mode == Modes.RectangleFill)
