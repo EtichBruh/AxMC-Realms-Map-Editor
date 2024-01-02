@@ -26,15 +26,15 @@ namespace AxMC_Realms_ME
         public static Tile[] MapTiles;
         public static Vector2[] MapBlocks;
         public static int MapWidth = 256, MapHeight = 256;
-        public static byte[] byteMap;
+        public static byte[] ByteMap;
         public static Entity[] Entities;
-        public static int numTiles = 18;
+        public static int NumTiles = 18;
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        const int blockSize = 50;
-        const float _blockSize = 1f / blockSize;
-        const float bSscale = blockSize / 16f;// block size scale factor
+        const int BLOCKSIZE = 50;
+        const float BLOCKSIZEFACTOR = 1f / BLOCKSIZE;
+        const float BLOCKSCALEFACTOR = BLOCKSIZE / 16f;// block size scale factor
 
         bool ShowGrid;
         bool Anims;
@@ -83,12 +83,12 @@ namespace AxMC_Realms_ME
         {
 
             // init map arrays
-            byteMap = new byte[MapWidth * MapHeight];
-            MapTiles = new Tile[byteMap.Length];
-            Entities = new Entity[byteMap.Length];
+            ByteMap = new byte[MapWidth * MapHeight];
+            MapTiles = new Tile[ByteMap.Length];
+            Entities = new Entity[ByteMap.Length];
 
             // fill byte map array with 255 ,because 255 is null tile
-            Array.Fill<byte>(byteMap, 255);
+            Array.Fill<byte>(ByteMap, 255);
 
             // Welcome the user :)
             Console.WriteLine(
@@ -206,10 +206,10 @@ namespace AxMC_Realms_ME
                     for (int y = startY; y <= EndY; y++)
                     {
                         int index = x + y * MapWidth;
-                        if (index >= byteMap.Length)
+                        if (index >= ByteMap.Length)
                             continue;
 
-                        byteMap[index] = byte.MaxValue;
+                        ByteMap[index] = byte.MaxValue;
                         MapTiles[index] = null;
                         Entities[index] = null;
                     }
@@ -220,10 +220,10 @@ namespace AxMC_Realms_ME
                     for (int y = startY; y <= EndY; y++)
                     {
                         int index = x + y * MapWidth;
-                        if (index >= byteMap.Length)
+                        if (index >= ByteMap.Length)
                             continue;
 
-                        byteMap[index] = (byte)choosedBlock;
+                        ByteMap[index] = (byte)choosedBlock;
                         MapTiles[index] = new Tile();
                     }
             }
@@ -236,10 +236,10 @@ namespace AxMC_Realms_ME
             while (RY != EndY || RX != EndX)
             {
                 int index = RX + RY * MapWidth;
-                if (index >= byteMap.Length || index < 0)
+                if (index >= ByteMap.Length || index < 0)
                     return;
 
-                byteMap[index] = (byte)choosedBlock;
+                ByteMap[index] = (byte)choosedBlock;
                 MapTiles[index] = new Tile();
                 
                 if (startY != EndY)
@@ -256,7 +256,7 @@ namespace AxMC_Realms_ME
         }
         private void Fill(int x, int y) // Thanks to akseli for this function <3
         {
-            byte tile = byteMap[x + y * MapWidth];
+            byte tile = ByteMap[x + y * MapWidth];
             byte filler = (byte)choosedBlock;
 
             Point[] states = [new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1)];
@@ -277,18 +277,18 @@ namespace AxMC_Realms_ME
                 Point state = states[current.state++];
                 Point p = new(current.pos.X + state.X, current.pos.Y + state.Y);
                 int index = p.X + p.Y * MapWidth;
-                if (index >= byteMap.Length || index < 0)
+                if (index >= ByteMap.Length || index < 0)
                 {
                     continue;
                 }
 
-                byte newTile = byteMap[index];
+                byte newTile = ByteMap[index];
 
                 if (newTile != tile || newTile == filler)
                 {
                     continue;
                 }
-                byteMap[index] = filler;
+                ByteMap[index] = filler;
                 MapTiles[index] = new Tile();
                 var lastNode = current;
                 current = nodePool.Get();
@@ -321,7 +321,7 @@ namespace AxMC_Realms_ME
                 else if (choosedBlock > 0)
                 {
                     choosedBlock--;
-                    Tile.NextTileSrcPos = 16 * (choosedBlock % numTiles);
+                    Tile.NextTileSrcPos = 16 * (choosedBlock % NumTiles);
                 }
             }
             else if (ScrollVal > MState.ScrollWheelValue)
@@ -331,10 +331,10 @@ namespace AxMC_Realms_ME
                 {
                     Camera.Zoom -= 0.02f;
                 }
-                else if (choosedBlock + 1 < numTiles + Entity.Data.Length)
+                else if (choosedBlock + 1 < NumTiles + Entity.Data.Length)
                 {
                     choosedBlock++;
-                    Tile.NextTileSrcPos = 16 * (choosedBlock % numTiles);
+                    Tile.NextTileSrcPos = 16 * (choosedBlock % NumTiles);
                 }
                 else
                 {
@@ -342,7 +342,7 @@ namespace AxMC_Realms_ME
                 }
             }
             Camera.Follow();
-            TMPos = (Vector2.Transform(MState.Position.ToVector2(), Matrix.Invert(Camera.Transform)) * _blockSize).ToPoint();
+            TMPos = (Vector2.Transform(MState.Position.ToVector2(), Matrix.Invert(Camera.Transform)) * BLOCKSIZEFACTOR).ToPoint();
 
             if (Mode == Modes.RectangleFill || Mode == Modes.LineFill)
             {
@@ -352,7 +352,7 @@ namespace AxMC_Realms_ME
 
             if (Anims)
                 for (int i = 0; i < MapTiles.Length; i++)
-                    if (byteMap[i] != 255 && (byteMap[i] == 5 || byteMap[i] == 6))
+                    if (ByteMap[i] != 255 && (ByteMap[i] == 5 || ByteMap[i] == 6))
                     {
                         var tile = MapTiles[i];
                         if ((tile.SrcRect.Y += 16) >= 512)
@@ -369,30 +369,30 @@ namespace AxMC_Realms_ME
                         case Modes.None:
                             if (DeleteMode)
                             {
-                                byteMap[index] = byte.MaxValue;
+                                ByteMap[index] = byte.MaxValue;
                                 MapTiles[index] = null;
                                 Entities[index] = null;
                                 break;
                             }
-                            if (choosedBlock < numTiles)
+                            if (choosedBlock < NumTiles)
                             {
-                                byteMap[index] = (byte)choosedBlock;
+                                ByteMap[index] = (byte)choosedBlock;
                                 MapTiles[index] = new Tile();
                                 break;
                             }
-                            Entities[index] = new((byte)(choosedBlock - numTiles));
+                            Entities[index] = new((byte)(choosedBlock - NumTiles));
                             break;
 
                         case Modes.Picker:
-                            choosedBlock = byteMap[index];
+                            choosedBlock = ByteMap[index];
 
-                            Tile.NextTileSrcPos = 16 * (choosedBlock % numTiles);
+                            Tile.NextTileSrcPos = 16 * (choosedBlock % NumTiles);
                             Mouse.SetCursor(MouseCursor.Arrow);
                             Mode = Modes.None;
                             break;
 
                         case Modes.Bucket:
-                            Fill(TMPos.X, (int)(MState.Y * _blockSize));
+                            Fill(TMPos.X, (int)(MState.Y * BLOCKSIZEFACTOR));
                             Mouse.SetCursor(MouseCursor.Arrow);
                             Mode = Modes.None;
                             break;
@@ -434,7 +434,7 @@ namespace AxMC_Realms_ME
                         mapents[i] = Entities[i].Id;
                     }
 
-                    nekoT.Map.Save(byteMap, mapents, MapWidth, path);
+                    nekoT.Map.Save(ByteMap, mapents, MapWidth, path);
 
                     Console.WriteLine($"Map saved in {path}.bm");
                     break;
@@ -452,7 +452,7 @@ namespace AxMC_Realms_ME
                     break;
 
                 case Keys.C:
-                    Array.Fill(byteMap, (byte)choosedBlock);
+                    Array.Fill(ByteMap, (byte)choosedBlock);
                     for (int i = 0; i < MapTiles.Length; i++) MapTiles[i] = new Tile();
                     break;
             }
@@ -511,12 +511,12 @@ namespace AxMC_Realms_ME
                 {
                     int index = x + y * MapWidth;
                     // length check removed due its not possible to trigger :D
-                    blockpos.X = x * blockSize;
-                    blockpos.Y = y * blockSize;
+                    blockpos.X = x * BLOCKSIZE;
+                    blockpos.Y = y * BLOCKSIZE;
 
                     if (MapTiles[index] is Tile tile)
                     {
-                        _spriteBatch.Draw(TileSet, blockpos, tile.SrcRect, Color.White, 0, Vector2.Zero, bSscale, 0, 0);
+                        _spriteBatch.Draw(TileSet, blockpos, tile.SrcRect, Color.White, 0, Vector2.Zero, BLOCKSCALEFACTOR, 0, 0);
                     }
                     if (Entities[index] is Entity ent)
                     {
@@ -534,9 +534,9 @@ namespace AxMC_Realms_ME
                     //Draw horizontal grid line
                     _spriteBatch.Draw(GridPixel, new Rectangle(0, x * 50, MapWidth * 50, temp), Color.White);
                 }
-                for (int x = 0; x < byteMap.Length; x++)
+                for (int x = 0; x < ByteMap.Length; x++)
                 {
-                    _spriteBatch.DrawString(Font, x.ToString(), new Vector2(x % MapWidth * blockSize + blockSize * 0.5f, x / MapWidth * blockSize + blockSize * 0.5f), Color.White, 0, Font.MeasureString(x.ToString()) * 0.5f, 1, 0, 0);
+                    _spriteBatch.DrawString(Font, x.ToString(), new Vector2(x % MapWidth * BLOCKSIZE + BLOCKSIZE * 0.5f, x / MapWidth * BLOCKSIZE + BLOCKSIZE * 0.5f), Color.White, 0, Font.MeasureString(x.ToString()) * 0.5f, 1, 0, 0);
                 }
             }
 
@@ -567,7 +567,7 @@ namespace AxMC_Realms_ME
                     {
                         v.X = x;
                         v.Y = y;
-                        _spriteBatch.Draw(GridTile, v * blockSize, null, DeleteMode ? Color.Red : Color.DeepSkyBlue, 0, Vector2.Zero, bSscale, 0, 0);
+                        _spriteBatch.Draw(GridTile, v * BLOCKSIZE, null, DeleteMode ? Color.Red : Color.DeepSkyBlue, 0, Vector2.Zero, BLOCKSCALEFACTOR, 0, 0);
                     }
             }
             else if (Mode == Modes.LineFill)
@@ -582,7 +582,7 @@ namespace AxMC_Realms_ME
 
                 while (RY != EndY || RX != EndX)
                 {
-                    _spriteBatch.Draw(GridTile, new Vector2(RX, RY) * blockSize, null, Color.Yellow, 0, Vector2.Zero, bSscale, 0, 0);
+                    _spriteBatch.Draw(GridTile, new Vector2(RX, RY) * BLOCKSIZE, null, Color.Yellow, 0, Vector2.Zero, BLOCKSCALEFACTOR, 0, 0);
                     if (startY != EndY)
                     {
                         startY += d.Y;
@@ -598,7 +598,7 @@ namespace AxMC_Realms_ME
 
             else if (Mode == Modes.None) // Draw Yellow/Red highlight
             {
-                _spriteBatch.Draw(GridTile, TMPos.ToVector2() * blockSize - Vector2.One, null, DeleteMode ? Color.Red : Color.Yellow, 0, Vector2.Zero, 3.25f, 0, 0);
+                _spriteBatch.Draw(GridTile, TMPos.ToVector2() * BLOCKSIZE - Vector2.One, null, DeleteMode ? Color.Red : Color.Yellow, 0, Vector2.Zero, 3.25f, 0, 0);
             }
 
             _spriteBatch.End();
@@ -625,7 +625,7 @@ namespace AxMC_Realms_ME
             _spriteBatch.DrawString(Font, Camera.Position.ToString(), new Vector2(0, 12), Color.Black);
             _spriteBatch.DrawString(Font, Camera.TPos.ToString() + " Camera Zoom: " + Camera.ScaleFactor.ToString(), new Vector2(0, 26), Color.Black);
 
-            _spriteBatch.DrawString(Font, choosedBlock < numTiles ? Tile.Data[choosedBlock].Name : Entity.Data[choosedBlock - numTiles].Name, new Vector2(0, 38), Color.Black);
+            _spriteBatch.DrawString(Font, choosedBlock < NumTiles ? Tile.Data[choosedBlock].Name : Entity.Data[choosedBlock - NumTiles].Name, new Vector2(0, 38), Color.Black);
 
             if (Mode == Modes.RectangleFill)
             {

@@ -50,7 +50,7 @@ namespace AxMC_Realms_Client.Map
         }
         public Tile(int id)
         {
-            SrcRect.X = 16 * (id % Editor.numTiles); // 7 is the amount of tiles on MCRTile
+            SrcRect.X = 16 * (id % Editor.NumTiles); // 7 is the amount of tiles on MCRTile
         }
         public Tile()
         {

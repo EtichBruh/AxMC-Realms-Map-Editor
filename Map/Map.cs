@@ -27,8 +27,8 @@ namespace nekoT
             using (BinaryReader br = new(File.OpenRead(path + ".bm")))
             {
                 Size.X = br.ReadInt32();
-                Editor.byteMap = br.ReadBytes(br.ReadInt32());
-                maplength = Editor.byteMap.Length;
+                Editor.ByteMap = br.ReadBytes(br.ReadInt32());
+                maplength = Editor.ByteMap.Length;
                 entids = br.ReadBytes(maplength);
             }
             Size.Y = maplength / Size.X;
@@ -38,7 +38,7 @@ namespace nekoT
             if (entids.Length > 0)
                 for (int i = 0; i < maplength; i++)
                 {
-                    byte Id = Editor.byteMap[i];
+                    byte Id = Editor.ByteMap[i];
                     byte EntityId = entids[i];
 
                     if (Id == 255) continue;
@@ -52,7 +52,7 @@ namespace nekoT
             else
                 for (int i = 0; i < maplength; i++)
                 {
-                    byte id = Editor.byteMap[i];
+                    byte id = Editor.ByteMap[i];
 
                     if (id == 255) continue;
 
