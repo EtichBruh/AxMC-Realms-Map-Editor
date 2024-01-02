@@ -1,11 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AxMC_Realms_ME.Graphics
 {
@@ -13,14 +7,17 @@ namespace AxMC_Realms_ME.Graphics
     {
         public static Matrix Transform { get; set; }
         public static Viewport View { get; set; }
-        public static float Zoom { get { return Scale.Translation.Z; } set
+        public static float Zoom
+        {
+            get { return Scale.Translation.Z; }
+            set
             {
                 Scale *= Matrix.CreateScale(1 + value);
                 ScaleFactor = 1f / Scale.M11;
             }
         }
         public static float ScaleFactor = 1;
-        private static Matrix Scale = Matrix.CreateScale(1,1,1);
+        private static Matrix Scale = Matrix.CreateScale(1, 1, 1);
 
         public static Point Position;
         public static Point TPos;

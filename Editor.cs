@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 
 namespace AxMC_Realms_ME
 {
@@ -18,17 +19,16 @@ namespace AxMC_Realms_ME
             return a;
         }
     }
-    public class Game1 : Game
+    public class Editor : Game
     {
-
-
+        public static JsonSerializerOptions JsonOptions = new() { IncludeFields = true, WriteIndented = true };
 
         public static Tile[] MapTiles;
         public static Vector2[] MapBlocks;
         public static int MapWidth = 256, MapHeight = 256;
         public static byte[] byteMap;
         public static Entity[] Entities;
-        public static int numTiles = 9;
+        public static int numTiles = 18;
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -52,7 +52,8 @@ namespace AxMC_Realms_ME
         Texture2D GridTile, GridPixel;
         Texture2D TileSet; //environment nvm no environment here ! its entity now, because im lazy to make it like that
         Texture2D Picker, Bucket;
-        public Game1()
+        SpriteFont Font;
+        public Editor()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -71,8 +72,8 @@ namespace AxMC_Realms_ME
         {
             int w = Camera.View.Width, h = Camera.View.Height;
             Camera.View = GraphicsDevice.Viewport;
-            Camera.Position.X += (Camera.View.Width - w) /2;
-            Camera.Position.Y += ( Camera.View.Height - h) / 2;
+            Camera.Position.X += (Camera.View.Width - w) / 2;
+            Camera.Position.Y += (Camera.View.Height - h) / 2;
 
             cx = GraphicsDevice.Viewport.Width / 16;
             cy = GraphicsDevice.Viewport.Height / 16;
@@ -105,9 +106,12 @@ namespace AxMC_Realms_ME
                 " Space to load map.\n" +
                 "Have fun!");
 
-            Entity.Load("EntityData.json");
+            Entity.Load("GameData/EntityData.json");
+            Tile.Initialize("GameData/Tiles.json");
 
             Camera.Init(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
+
+            OnResize(null, null);
 
             base.Initialize();
         }
@@ -119,10 +123,12 @@ namespace AxMC_Realms_ME
             var w = Color.White;
             var t = Color.Transparent;
 
-            TileSet = Content.Load<Texture2D>("MCRTile");
+            TileSet = Content.Load<Texture2D>("Assets");
 
             Picker = Content.Load<Texture2D>("picker");
             Bucket = Content.Load<Texture2D>("busket");
+
+            Font = Content.Load<SpriteFont>("Font");
 
             GridTile = new Texture2D(GraphicsDevice, 16, 16);
             GridTile.SetData(new Color[]
@@ -255,12 +261,7 @@ namespace AxMC_Realms_ME
             byte tile = byteMap[x + y * MapWidth];
             byte filler = (byte)choosedBlock;
 
-            Point[] states = new Point[4];
-            states[0] = new Point(1, 0);
-            states[1] = new Point(-1, 0);
-            states[2] = new Point(0, 1);
-            states[3] = new Point(0, -1);
-
+            Point[] states = [new Point(1, 0), new Point(-1, 0), new Point(0, 1), new Point(0, -1)];
             Node current = nodePool.Get();
             current.pos = new Point(x, y);
             current.last = null;
@@ -277,7 +278,7 @@ namespace AxMC_Realms_ME
                 }
 
                 Point state = states[current.state++];
-                Point p = new Point(current.pos.X + state.X, current.pos.Y + state.Y);
+                Point p = new(current.pos.X + state.X, current.pos.Y + state.Y);
                 int index = p.X + p.Y * MapWidth;
                 if (index >= byteMap.Length || index < 0)
                 {
@@ -308,7 +309,7 @@ namespace AxMC_Realms_ME
             var pos = MState.Position;
             MState = Mouse.GetState();
 
-            if(MState.RightButton == ButtonState.Pressed)
+            if (MState.RightButton == ButtonState.Pressed)
             {
                 Camera.Position += pos - MState.Position;
             }
@@ -318,7 +319,7 @@ namespace AxMC_Realms_ME
             {
                 if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
                 {
-                    Camera.Zoom = 0.02f;
+                    Camera.Zoom += 0.02f;
                 }
                 else if (choosedBlock > 0)
                 {
@@ -331,12 +332,16 @@ namespace AxMC_Realms_ME
 
                 if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
                 {
-                    Camera.Zoom = (-0.02f);
+                    Camera.Zoom -= 0.02f;
                 }
-                else
+                else if(choosedBlock + 1 < numTiles + Entity.Data.Length)
                 {
                     choosedBlock++;
                     Tile.nextTileSrcPos = 16 * (choosedBlock % numTiles);
+                }
+                else
+                {
+                    choosedBlock = 0;
                 }
             }
             Camera.Follow();
@@ -425,7 +430,7 @@ namespace AxMC_Realms_ME
                 case Keys.Enter:
                     Console.WriteLine("Write map name you want to save (or path)");
                     string path = Console.ReadLine();
-                    if (path == "")
+                    if (string.IsNullOrEmpty(path))
                     {
                         Console.WriteLine("Wrong map name");
                         break;
@@ -446,9 +451,11 @@ namespace AxMC_Realms_ME
                 case Keys.Space:
                     Console.WriteLine("Write map name you want to load");
                     path = Console.ReadLine();
-                    if (path == "") { 
-                    Console.WriteLine("Wrong map name");
-                        break; }
+                    if (path == "")
+                    {
+                        Console.WriteLine("Wrong map name");
+                        break;
+                    }
                     nekoT.Map.Load(path);
                     Console.WriteLine($"Map loaded from {path}.bm");
                     break;
@@ -505,11 +512,11 @@ namespace AxMC_Realms_ME
 
             var blockpos = new Vector2();
 
-            int camx = Math.Max(0, Camera.TPos.X);
-            int camy = Math.Max(0, Camera.TPos.Y);
+            //int camx = Math.Max(0, (int)(Camera.TPos.X - Camera.ScaleFactor));
+            //int camy = Math.Max(0, (int)(Camera.TPos.Y - Camera.ScaleFactor));
 
-            for (int x = camx; x < Math.Min(cx * Camera.ScaleFactor + camx, MapWidth); x++)
-                for (int y = camy; y < Math.Min(cy * Camera.ScaleFactor + camy, MapHeight); y++)
+            for (int x = 0; x < MapWidth; x++)
+                for (int y = 0; y < MapHeight; y++)
                 {
                     int index = x + y * MapWidth;
                     // length check removed due its not possible to trigger :D
@@ -535,6 +542,10 @@ namespace AxMC_Realms_ME
                     _spriteBatch.Draw(GridPixel, new Rectangle(x * 50, 0, temp, MapHeight * 50), Color.White);
                     //Draw horizontal grid line
                     _spriteBatch.Draw(GridPixel, new Rectangle(0, x * 50, MapWidth * 50, temp), Color.White);
+                }
+                for (int x = 0; x < byteMap.Length; x++)
+                {
+                    _spriteBatch.DrawString(Font, x.ToString(), new Vector2(x % MapWidth * blockSize + blockSize * 0.5f, x / MapWidth * blockSize + blockSize * 0.5f), Color.White, 0, Font.MeasureString(x.ToString()) * 0.5f, 1, 0, 0);
                 }
             }
 
@@ -618,6 +629,17 @@ namespace AxMC_Realms_ME
 
             _spriteBatch.Draw(TileSet, BlockinvPos, new(0, 0, TileSet.Width, 16), Color.White);
             _spriteBatch.Draw(GridTile, BlockinvPos + new Vector2(choosedBlock * 16 - 1, -1), null, Color.Yellow, 0, Vector2.Zero, 1.125f, 0, 0);
+
+            _spriteBatch.DrawString(Font, TMPos.ToString(), Vector2.Zero, Color.Black);
+            _spriteBatch.DrawString(Font, Camera.Position.ToString(), new Vector2(0, 12), Color.Black);
+            _spriteBatch.DrawString(Font, Camera.TPos.ToString() + " Camera Zoom: " + Camera.ScaleFactor.ToString(), new Vector2(0, 26), Color.Black);
+            
+            _spriteBatch.DrawString(Font, choosedBlock < numTiles ? Tile.Data[choosedBlock].Name : Entity.Data[choosedBlock - numTiles].Name, new Vector2(0, 38), Color.Black);
+
+            if (Mode == Modes.RectangleFill)
+            {
+                _spriteBatch.DrawString(Font, RectFill.ToString(), new Vector2(0, 38), Color.Black);
+            }
 
             _spriteBatch.End();
             // TODO: Add your drawing code here

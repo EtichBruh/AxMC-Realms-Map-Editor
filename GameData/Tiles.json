@@ -1,0 +1,90 @@
+[
+  {
+    "Id": 0,
+    "Name": "Grass"
+  },
+  {
+    "Id": 1,
+    "Name": "Dirt"
+  },
+  {
+    "Id": 2,
+    "Name": "Stone"
+  },
+  {
+    "Id": 3,
+    "Name": "Red Wool"
+  },
+  {
+    "Id": 4,
+    "Name": "Wooden Planks"
+  },
+  {
+    "Id": 5,
+    "Name": "Water",
+    "Frames": 32
+  },
+  {
+    "Id": 6,
+    "Name": "Lava",
+    "Frames": 4
+  },
+  {
+    "Id": 7,
+    "Name": "Block",
+    "Wall": true
+  },
+  {
+    "Id": 8,
+    "Name": "Wood",
+    "Wall": true
+  },
+  {
+    "Id": 9,
+    "Name": "Spawn Point"
+  },
+  {
+    "Id": 10,
+    "Name": "Sand"
+  },
+  {
+    "Id": 11,
+    "Name": "Metal Plate"
+  },
+  {
+    "Id": 12,
+    "Name": "Metal Yellow Stripes"
+  },
+  {
+    "Id": 13,
+    "Name": "Forest Grass"
+  },
+  {
+    "Id": 14,
+    "Name": "Dirt With Stones"
+  },
+  {
+    "Id": 15,
+    "Name": "Dirt With Seeds"
+  },
+  {
+    "Id": 16,
+    "Name": "Block floor"
+  },
+  {
+    "Id": 17,
+    "Name": "Green Plates"
+  },
+  {
+    "Id": 18,
+    "Name": "Grass"
+  },
+  {
+    "Id": 19,
+    "Name": "Grass"
+  },
+  {
+    "Id": 20,
+    "Name": "Grass"
+  }
+]

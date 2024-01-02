@@ -27,38 +27,38 @@ namespace nekoT
             using (BinaryReader br = new(File.OpenRead(path + ".bm")))
             {
                 Size.X = br.ReadInt32();
-                Game1.byteMap = br.ReadBytes(br.ReadInt32());
-                entids = br.ReadBytes(Game1.byteMap.Length);
+                Editor.byteMap = br.ReadBytes(br.ReadInt32());
+                entids = br.ReadBytes(Editor.byteMap.Length);
             }
-            Size.Y = Game1.byteMap.Length / Size.X;
-            Game1.MapTiles = new Tile[Game1.byteMap.Length];
-            Game1.Entities = new AxMC_Realms_ME.Map.Entity[Game1.byteMap.Length];
-            Game1.MapBlocks = new Vector2[Game1.byteMap.Length];
+            Size.Y = Editor.byteMap.Length / Size.X;
+            Editor.MapTiles = new Tile[Editor.byteMap.Length];
+            Editor.Entities = new AxMC_Realms_ME.Map.Entity[Editor.byteMap.Length];
+            Editor.MapBlocks = new Vector2[Editor.byteMap.Length];
             if (entids.Length > 0)
             {
-                for (int i = 0; i < Game1.byteMap.Length; i++)
+                for (int i = 0; i < Editor.byteMap.Length; i++)
                 {
-                    byte Id = Game1.byteMap[i];
+                    byte Id = Editor.byteMap[i];
                     byte EntityId = entids[i];
 
                     if (Id == 255) continue;
 
-                    Game1.MapTiles[i] = new Tile(Id);
+                    Editor.MapTiles[i] = new Tile(Id);
 
                     if (EntityId == 255) continue;
 
-                    Game1.Entities[i] = new(EntityId);
+                    Editor.Entities[i] = new(EntityId);
                 }
             }
             else
             {
-                for (int i = 0; i < Game1.byteMap.Length; i++)
+                for (int i = 0; i < Editor.byteMap.Length; i++)
                 {
-                    byte id = Game1.byteMap[i];
+                    byte id = Editor.byteMap[i];
 
                     if (id == 255) continue;
 
-                    Game1.MapTiles[i] = new Tile(id);
+                    Editor.MapTiles[i] = new Tile(id);
                 }
             }
         }

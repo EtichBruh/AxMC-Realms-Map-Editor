@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace AxMC_Realms_ME
 {
@@ -10,8 +9,8 @@ namespace AxMC_Realms_ME
         {
             Console.BufferWidth = 400;
             Console.WindowWidth = 40;
-                using (var game = new Game1())
-                    game.Run();
+            using (var game = new Editor())
+                game.Run();
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using System.IO;
 using System.Text.Json;
 
@@ -24,7 +23,7 @@ namespace AxMC_Realms_ME.Map
 
         public int Scale;
         public int Frames;
-        public int Destination;
+        public string Destination;
         public int[] Drops;
 
         public EntityType Type;
@@ -34,14 +33,15 @@ namespace AxMC_Realms_ME.Map
     public class Entity
     {
         public static Rectangle[] SRect;
+        public static EntityData[] Data;
 
         public static void Load(string Path)
         {
-            var data = JsonSerializer.Deserialize<EntityData[]>(File.ReadAllText(Path), new JsonSerializerOptions() { IncludeFields = true });
-            SRect = new Rectangle[data.Length];
-            for (int i = 0; i < data.Length; i++)
+            Data = JsonSerializer.Deserialize<EntityData[]>(File.ReadAllText(Path), new JsonSerializerOptions() { IncludeFields = true });
+            SRect = new Rectangle[Data.Length];
+            for (int i = 0; i < Data.Length; i++)
             {
-                SRect[i] = data[i].Source;
+                SRect[i] = Data[i].Source;
             }
         }
 

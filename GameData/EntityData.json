@@ -13,7 +13,7 @@
 			"Y": 9
 		},
 		"Type": 3,
-		"Destination": 0,
+		"Destination": "Cave",
 		"Scale": 5,
 		"Frames": 1
 	},
@@ -31,7 +31,7 @@
 			"Y": 7
 		},
 		"Type": 3,
-		"Destination": 1,
+		"Destination": "Cave",
 		"Scale": 5,
 		"Frames": 5
 	},
@@ -165,7 +165,8 @@
 		},
 		"Scale": 5,
 		"Frames": 15,
-		"Type": 1
+		"Type": 1,
+		"Drops": [0,1,2,3]
 	},
 	{
 		"Id": 10,
@@ -200,5 +201,22 @@
 		"Scale": 5,
 		"Frames": 15,
 		"Type": 2
+	},
+	{
+		"Id": 12,
+		"Name": "Bullet",
+		"Source": {
+			"X": 24,
+			"Y": 523,
+			"Width": 8,
+			"Height": 8
+		},
+		"Origin": {
+			"X": 4,
+			"Y": 4
+		},
+		"Scale": 5,
+		"Frames": 1,
+		"Type": 5
 	}
 ]
