@@ -1,6 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Anomalous.Entities;
+using Microsoft.Xna.Framework;
+using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AxMC_Realms_ME.Map
 {
@@ -13,6 +16,7 @@ namespace AxMC_Realms_ME.Map
         Container,
         Projectile
     }
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Skip)]
     public struct EntityData
     {
         public int Id;
@@ -24,7 +28,7 @@ namespace AxMC_Realms_ME.Map
         public int Scale;
         public int Frames;
         public string Destination;
-        public int[] Drops;
+        public Loot[] Drops;
 
         public EntityType Type;
         public bool Collides;
@@ -33,15 +37,18 @@ namespace AxMC_Realms_ME.Map
     public class Entity
     {
         public static Rectangle[] SRect;
+        public static float[] Scale;
         public static EntityData[] Data;
 
         public static void Load(string Path)
         {
             Data = JsonSerializer.Deserialize<EntityData[]>(File.ReadAllText(Path), new JsonSerializerOptions() { IncludeFields = true });
             SRect = new Rectangle[Data.Length];
+            Scale = new float[Data.Length];
             for (int i = 0; i < Data.Length; i++)
             {
-                SRect[i] = Data[i].Source;
+                var rect = SRect[i] = Data[i].Source;
+                Scale[i] = MathF.Max(16f / rect.Width, 16f / rect.Height);
             }
         }
 

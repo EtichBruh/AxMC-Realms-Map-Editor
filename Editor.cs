@@ -28,7 +28,7 @@ namespace AxMC_Realms_ME
         public static int MapWidth = 256, MapHeight = 256;
         public static byte[] ByteMap;
         public static Entity[] Entities;
-        public static int NumTiles = 18;
+        public static int NumTiles;
 
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -108,7 +108,7 @@ namespace AxMC_Realms_ME
 
             Entity.Load("GameData/EntityData.json");
             Tile.Initialize("GameData/Tiles.json");
-
+            NumTiles = Tile.Data.Length;
             Camera.Init(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
 
             OnResize(null, null);
@@ -241,7 +241,7 @@ namespace AxMC_Realms_ME
 
                 ByteMap[index] = (byte)choosedBlock;
                 MapTiles[index] = new Tile();
-                
+
                 if (startY != EndY)
                 {
                     startY += d.Y;
@@ -606,19 +606,18 @@ namespace AxMC_Realms_ME
             // UI spritebatch
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-            var BlockinvPos = new Vector2(Window.ClientBounds.Width - 16 * Entity.SRect.Length - 10, 36); // 10 is small offset, so it look cool :sunglasses:
+            var BlockinvPos = new Vector2(Window.ClientBounds.Width - 16 * Tile.Data.Length - 10, 36); // 10 is small offset, so it look cool :sunglasses:
 
             var offset = 0;
             for (int i = 0; i < Entity.SRect.Length; i++)
             {
-                _spriteBatch.Draw(TileSet, BlockinvPos + new Vector2(offset, 0), Entity.SRect[i], Color.White);
+                _spriteBatch.Draw(TileSet, BlockinvPos + new Vector2(offset, 0), Entity.SRect[i], Color.White, 0, Vector2.Zero, Entity.Scale[i], 0, 0);
                 offset += 16;
             }
-            //_spriteBatch.Draw(Entity.SpriteSheets, new Rectangle((int)BlockinvPos.X, (int)BlockinvPos.Y, 16 * Entity.SRect.Length, 16), Color.White);
 
-            BlockinvPos.X -= TileSet.Width;
+            BlockinvPos.X -= Tile.Data.Length * 16;
 
-            _spriteBatch.Draw(TileSet, BlockinvPos, new(0, 0, TileSet.Width, 16), Color.White);
+            _spriteBatch.Draw(TileSet, BlockinvPos, new(0, 0, Tile.Data.Length * 16, 16), Color.White);
             _spriteBatch.Draw(GridTile, BlockinvPos + new Vector2(choosedBlock * 16 - 1, -1), null, Color.Yellow, 0, Vector2.Zero, 1.125f, 0, 0);
 
             _spriteBatch.DrawString(Font, TMPos.ToString(), Vector2.Zero, Color.Black);
